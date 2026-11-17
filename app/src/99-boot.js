@@ -1,5 +1,6 @@
 // ---------- boot ----------
 async function boot() {
+  const liveReady = Live.load();
   try {
     const [core, airports, routes, alerts, odays] = await Promise.all(['core', 'airports', 'routes', 'alerts', 'origin_days'].map(getJSON));
     Object.assign(D, { core, airports, routes, alerts, origin_days: odays, airlines: core.airlines });
@@ -9,7 +10,12 @@ async function boot() {
     return;
   }
   Triage.init(); initAsk();
+  S.home = (await liveReady) ? 'now' : 'inbox';      // open on live data where it exists, else the archive
   applyHash(true);
+  setInterval(() => {
+    if (modeOf(S.view) !== 'live' || document.hidden) return;
+    Live.load().then(() => { if (modeOf(S.view) === 'live' && !S.stack.length) renderAll(); });
+  }, 5 * 60 * 1000);
   window.addEventListener('hashchange', () => {
     if (S.selfHash === location.hash.slice(1)) { S.selfHash = null; return; }
     S.selfHash = null; applyHash(false);

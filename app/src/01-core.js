@@ -62,7 +62,7 @@ const ICONS = {
   inbox: 'M4 6h16M4 12h16M4 18h10', map: 'M12 3l2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6z',
   explore: 'M5 5h6v6H5zM13 5h6v6h-6zM5 13h6v6H5zM13 13h6v6h-6z', delays: 'M12 4a8 8 0 100 16 8 8 0 000-16zM12 8v4.5l3 1.8',
   pipeline: 'M3 6h5v4H3zM16 4h5v4h-5zM16 15h5v4h-5zM8 8h4V6h4M12 8v9h4', ask: 'M4 5h16v11H10l-5 4v-4H4z',
-  back: 'M15 5l-7 7 7 7', close: 'M6 6l12 12M18 6L6 18',
+  now: 'M3 12h4l3-7 4 14 3-7h4', back: 'M15 5l-7 7 7 7', close: 'M6 6l12 12M18 6L6 18',
   brand: 'M3 14c4-6 7-6 9 0s5 6 9 0M3 8c4-5 7-5 9 0s5 5 9 0',
 };
 const icon = name => s('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8,
@@ -114,10 +114,15 @@ const need = name => (pending[name] ??= getJSON(name).then(v => {
 const index = (rows, key = 'id') => new Map(rows.map(r => [r[key], r]));
 
 // ---------- state + routing ----------
-const VIEWS = [['inbox', 'Alerts'], ['map', 'Map'], ['explore', 'Objects'], ['delays', 'Delays'], ['pipeline', 'Pipeline'], ['ask', 'Ask']];
+// Two separate modes: the live feeds, and the 2013 archive.
+const MODES = { live: [['now', 'Now'], ['live-map', 'Map']],
+  archive: [['inbox', 'Alerts'], ['map', 'Map'], ['explore', 'Objects'], ['delays', 'Delays'], ['pipeline', 'Pipeline'], ['ask', 'Ask']] };
+const VIEWS = [...MODES.live, ...MODES.archive];
+const modeOf = v => (MODES.live.some(x => x[0] === v) ? 'live' : 'archive');
+const NAV_ICON = { 'live-map': 'map' };
 const VIEW = {};      // name -> { render(root) }
 const DETAIL = {};    // object type -> { kind, get(id), render(obj), title(obj) }
-const S = { view: 'inbox', stack: [], selfHash: null, width: innerWidth, askReady: false };
+const S = { view: 'inbox', home: 'inbox', last: { live: 'now', archive: 'inbox' }, stack: [], selfHash: null, width: innerWidth, askReady: false };
 const HASHABLE = ['alert', 'route', 'airline', 'airport', 'aircraft', 'day'];
 
 function hashFor(top) {
@@ -131,10 +136,10 @@ function syncHash() {
 function applyHash(initial) {
   const x = location.hash.slice(1), m = /^([a-z]+)-(.+)$/.exec(x);
   if (m && HASHABLE.includes(m[1])) {
-    if (initial) S.view = m[1] === 'alert' ? 'inbox' : 'explore';
+    if (initial || modeOf(S.view) === 'live') S.view = m[1] === 'alert' ? 'inbox' : 'explore';
     S.stack = [{ type: m[1], id: m[1] === 'day' ? m[2].replace('-', '_') : m[2] }];
   } else {
-    S.view = VIEWS.some(v => v[0] === x) && (x !== 'ask' || S.askReady) ? x : (initial ? 'inbox' : S.view);
+    S.view = VIEWS.some(v => v[0] === x) && (x !== 'ask' || S.askReady) ? x : (initial ? S.home : S.view);
     S.stack = [];
   }
   renderAll();
@@ -152,10 +157,13 @@ const selected = type => { const t = S.stack.at(-1); return t && t.type === type
 const link = (type, id, label) => h('button', { class: 'linkish', type: 'button', onclick: e => { e.stopPropagation(); openObj(type, id); } }, label ?? id);
 
 function renderNav() {
-  $('#nav').replaceChildren(h('span', { class: 'brand', title: 'Crosswind' }, icon('brand')),
-    ...VIEWS.filter(([id]) => id !== 'ask' || S.askReady).map(([id, label]) =>
-      h('button', { type: 'button', 'aria-current': S.view === id ? 'page' : null, onclick: () => setView(id) },
-        icon(id === 'explore' ? 'explore' : id), label)));
+  const mode = modeOf(S.view);
+  S.last[mode] = S.view;
+  $('#top').replaceChildren(h('span', { class: 'brand' }, icon('brand'), 'Crosswind'),
+    seg([['live', 'Live'], ['archive', '2013']], mode, m => { if (m !== mode) setView(S.last[m]); }, 'Data mode'));
+  $('#nav').replaceChildren(...MODES[mode].filter(([id]) => id !== 'ask' || S.askReady).map(([id, label]) =>
+    h('button', { type: 'button', 'aria-current': S.view === id ? 'page' : null, onclick: () => setView(id) },
+      icon(NAV_ICON[id] || id), label)));
 }
 function renderDrawer() {
   const el = $('#drawer'), top = S.stack.at(-1);

@@ -1,0 +1,42 @@
+# Fetches the live FAA and weather feeds, builds app/data/live.json and publishes the app to GitHub Pages.
+# Needs: Settings > Pages > Build and deployment > Source = "GitHub Actions".
+name: Live data and site
+
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"      # every 15 minutes; GitHub may start scheduled runs late
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check the live job against sample feeds
+        run: python tests/test_live.py
+      - name: Fetch live feeds and build live.json
+        run: python -m live.build --site-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: app
+      - id: deployment
+        uses: actions/deploy-pages@v4

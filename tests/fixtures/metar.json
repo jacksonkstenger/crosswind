@@ -1,0 +1,5 @@
+[
+ {"icaoId":"KEWR","obsTime":1794927060,"reportTime":"2026-11-17 15:00:00","temp":8.9,"dewp":7.2,"wdir":310,"wspd":12,"wgst":22,"visib":2.5,"altim":1009.3,"wxString":"-RA BR","rawOb":"KEWR 171451Z 31012G22KT 2 1/2SM -RA BR BKN008 OVC015 09/07 A2981","clouds":[{"cover":"BKN","base":800},{"cover":"OVC","base":1500}],"name":"Newark/Liberty Intl, NJ, US"},
+ {"icaoId":"KJFK","obsTime":1794927060,"temp":10.0,"dewp":4.0,"wdir":"VRB","wspd":4,"visib":"10+","rawOb":"KJFK 171451Z VRB04KT 10SM FEW050 10/04 A3001","clouds":[{"cover":"FEW","base":5000}]},
+ {"icaoId":"KLGA","rawOb":"KLGA 171451Z 33018G29KT 1 1/2SM +SN BKN004 M02/M04 A2979"}
+]

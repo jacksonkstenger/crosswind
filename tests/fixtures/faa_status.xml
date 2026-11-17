@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AIRPORT_STATUS_INFORMATION>
+  <Update_Time>Tue Nov 17 15:02:11 2026 GMT</Update_Time>
+  <Dtd_File>http://www.fly.faa.gov/AirportStatus.dtd</Dtd_File>
+  <Delay_type>
+    <Name>Ground Delay Programs</Name>
+    <Ground_Delay_List>
+      <Ground_Delay><ARPT>EWR</ARPT><Reason>weather:low ceilings</Reason><Avg>1 hour and 12 minutes</Avg><Max>3 hours and 5 minutes</Max></Ground_Delay>
+    </Ground_Delay_List>
+  </Delay_type>
+  <Delay_type>
+    <Name>Ground Stop Programs</Name>
+    <Ground_Stop_List>
+      <Program><ARPT>ORD</ARPT><Reason>thunderstorms</Reason><End_Time>10:45 am CST</End_Time></Program>
+    </Ground_Stop_List>
+  </Delay_type>
+  <Delay_type>
+    <Name>General Arrival/Departure Delay Info</Name>
+    <Arrival_Departure_Delay_List>
+      <Delay><ARPT>LGA</ARPT><Reason>WX:Wind</Reason>
+        <Arrival_Departure Type="Departure"><Min>16 minutes</Min><Max>30 minutes</Max><Trend>Increasing</Trend></Arrival_Departure>
+      </Delay>
+      <Delay><ARPT>BOS</ARPT><Reason>VOL:Volume</Reason>
+        <Arrival_Departure Type="Arrival"><Min>31 minutes</Min><Max>45 minutes</Max><Trend>Decreasing</Trend></Arrival_Departure>
+      </Delay>
+      <Delay><ARPT>ATL</ARPT><Reason>RWY:Construction</Reason>
+        <Arrival_Departure Type="Departure"><Min>16 minutes</Min><Max>30 minutes</Max><Trend>Increasing</Trend></Arrival_Departure>
+      </Delay>
+    </Arrival_Departure_Delay_List>
+  </Delay_type>
+  <Delay_type>
+    <Name>Airport Closures</Name>
+    <Airport_Closure_List>
+      <Airport><ARPT>ZZZ</ARPT><Reason>!ZZZ 11/004 ZZZ AD AP CLSD</Reason><Start>Nov 17 at 12:00 UTC.</Start><Reopen>Nov 17 at 20:00 UTC.</Reopen></Airport>
+    </Airport_Closure_List>
+  </Delay_type>
+</AIRPORT_STATUS_INFORMATION>
