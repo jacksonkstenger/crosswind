@@ -15,6 +15,8 @@ python -m pipeline.run                    # ~7 s: builds data/*.parquet and app/
 python tools/build_app.py                 # inlines app/src into app/index.html
 python -m http.server 8000 --directory app   # then open http://localhost:8000
 python tests/test_stats.py                # checks the alert statistics
+python tests/test_live.py                 # checks the live job on sample feeds
+python -m live.build                      # optional: fetch the live feeds into app/data/live.json
 ```
 
 ## Data
@@ -50,11 +52,11 @@ query and lists its health checks. The runner materialises each dataset as Parqu
 | processed | 4 | Status, route, 15-minute delay flags and bands, distance band, weather flags |
 | enriched | 2 | The fan-in: one wide row per flight with airline, airports, aircraft and weather in the scheduled hour |
 | transform | 2 | Flight fact table and one row per delay of 15+ minutes |
-| metrics | 10 | Per route-day, origin-day, airline, hour, weather bin, distance band |
+| metrics | 12 | Per route-day, route-month, origin-day, origin-month-hour, airline, hour, weather bin, distance band |
 | alerts | 1 | Three detectors (below) |
 | ontology | 9 | One backing table per object type, plus the airline-route join table |
 
-45 datasets and 165 checks. Two checks warn by design: 15% of flights carry a tail number
+47 datasets and 171 checks. Two checks warn by design: 15% of flights carry a tail number
 that is not in the registry (some carriers report fleet numbers), and the 17-mile EWR to
 LGA hop misses a 2% distance tolerance through rounding.
 
@@ -77,7 +79,11 @@ All in `pipeline/stage_alerts.py`; each alert stores the numbers that triggered 
    late exceeds one half, with at least 15 arrivals.
 
 They raise 296 alerts over the year: 247 delay spikes, 19 cancellation clusters and 30
-chronic weeks. z is not a calibrated p-value (delays are skewed), so its threshold is a
+chronic weeks.
+
+Every alert carries its baseline: the same metric for the route over the year and in that
+month, for all departures from its origin and for all flights, plus how often the detector
+fires (for example, delay spikes fired on 247 of the 22,918 route-days examined, 1.08%). z is not a calibrated p-value (delays are skewed), so its threshold is a
 conservative convention; the binomial test assumes independent cancellations given p₀,
 which is why p₀ absorbs airport-wide bad days.
 
@@ -88,10 +94,37 @@ Alert, joined by 14 link types. `pipeline/stage_ontology.py` holds the definitio
 including the state machine for triaging an alert (open → acknowledged → investigating →
 resolved or dismissed, with reopen).
 
+## Live mode
+
+`live/` is a second, much smaller pipeline for the present day. It uses only the standard
+library, so the scheduled job needs no installs.
+
+- **Feeds**: the FAA airport-status feed behind nasstatus.faa.gov (ground stops, ground
+  delay programmes, arrival and departure delays, closures) and current METAR weather from
+  the Aviation Weather Center. Both are public and need no key.
+- **Live alerts**: a programme at EWR, JFK or LGA, or at any of the 105 destinations they
+  served in 2013 (a ground stop at Chicago holds the New York flights bound for it).
+- **Baselines**: each live alert sits beside what was normal in 2013: the affected routes'
+  on-time rate for the month and the year, or the origin's usual delay at this hour and
+  month, and how 2013 departures fared in similar visibility, wind and temperature.
+- **Limits**: the feeds describe airports, not individual flights. A ground stop can exempt
+  some origins and the feed does not say which.
+
+`.github/workflows/live.yml` runs `python -m live.build` every 15 minutes and publishes
+`app/` to GitHub Pages. To switch it on: make the repository public (or use a plan that
+allows Pages on private repositories), then set Settings > Pages > Source to "GitHub
+Actions". History for the 48-hour chart is carried forward from the previously published
+site, so nothing is committed back to the repository.
+
+The parsers were written against the documented shape of the two feeds and tested on the
+samples in `tests/fixtures/`; the job saves the raw payloads next to the page
+(`data/live_faa.xml`, `data/live_metar.json`) so a parsing problem can be diagnosed.
+
 ## App
 
 `app/index.html` is one self-contained page (no framework, no map library) that reads
-`app/data/*.json`.
+`app/data/*.json`. A switch at the top moves between two separate modes. **Live** has a
+board for the three airports, the live alerts and a status map. **2013** is the archive:
 
 - **Alerts**: the inbox, with filters, the statistic behind each alert, the flights
   involved, the weather, and triage with notes and a history.

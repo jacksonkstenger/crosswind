@@ -49,7 +49,7 @@ const Triage = {
 };
 
 // ---------- inbox ----------
-const IN = { status: 'open', sev: new Set(), type: new Set(), origin: new Set(), q: '', sort: 'date' };
+const IN = { status: 'open', sev: new Set(), type: new Set(), origin: new Set(), q: '', sort: 'date', open: false };
 const STATUS_GROUP = { open: ['open'], active: ['acknowledged', 'investigating'], closed: ['resolved', 'dismissed'] };
 const SEV_RANK = { critical: 0, high: 1, medium: 2 };
 const alertWhen = a => a.type === 'chronic_lateness' ? `week of ${F.date(a.date)}` : F.date(a.date);
@@ -57,6 +57,18 @@ function alertStat(a) {
   if (a.type === 'delay_spike') return [`${Math.round(a.observed)} min`, 'mean departure delay'];
   if (a.type === 'cancellation_cluster') return [`${Math.round(a.observed * a.n)} of ${a.n}`, 'flights cancelled'];
   return [F.pct(a.observed), 'arrived 15+ min late'];
+}
+const BASE_FMT = { delay_spike: v => `${Math.round(v)} min`, cancellation_cluster: v => F.pct(v, 1), chronic_lateness: v => F.pct(v) };
+const BASE_NAME = { delay_spike: 'Mean departure delay', cancellation_cluster: 'Share of flights cancelled', chronic_lateness: 'Share of arrivals 15+ min late' };
+function baselineBlock(a) {
+  const f = BASE_FMT[a.type], unit = a.type === 'chronic_lateness' ? 'week' : 'day', month = MONTHS[+a.date.slice(5, 7) - 1];
+  const rows = [[`This ${unit}`, a.observed, true], [`This route in ${month}`, a.b_month], ['This route, all of 2013', a.b_route],
+    [`All ${a.o} departures, 2013`, a.b_origin], ['All flights, 2013', a.b_all]].filter(r => r[1] != null);
+  const times = a.b_route > 0 ? a.observed / a.b_route : null;
+  return h('section', { class: 'sect' }, h('h2', { text: 'Baseline' }),
+    h('p', { class: 'note', text: `${BASE_NAME[a.type]}.${times ? ` This ${unit} ran at ${F.num(times, 1)} times the route's rate for the year.` : ''}` }),
+    hbars(rows.map(([label, v, hi]) => ({ label, value: Math.max(0, v), text: f(v), color: hi ? PAL.series[0] : PAL.quiet }))),
+    h('p', { class: 'note', text: `How often this detector fires: on ${F.int(a.fired)} of ${F.int(a.elig)} route-${unit}s it examined in 2013 (${F.pct(a.fired / a.elig, 2)}), and on ${a.fired_r} of ${F.int(a.elig_r)} for this route.` }));
 }
 function toggleSet(set, v) { set.has(v) ? set.delete(v) : set.add(v); }
 
@@ -74,14 +86,19 @@ VIEW.inbox = {
         label, h('span', { class: 'n', text: D.alerts.filter(a => passes(a, key) && a[key === 'origin' ? 'o' : key] === v).length })));
     const drawControls = () => {
       const n = g => D.alerts.filter(a => passes(a, 'status') && (g === 'all' || STATUS_GROUP[g].includes(Triage.get(a.id).status))).length;
-      controls.replaceChildren(
+      // On a phone the filters fold away so the first alerts sit above the fold.
+      const narrow = innerWidth < 620, open = !narrow || IN.open, active = IN.sev.size + IN.type.size + IN.origin.size + (IN.q ? 1 : 0);
+      controls.replaceChildren();
+      put(controls,
         h('div', { class: 'row' },
           seg([['open', `Open ${n('open')}`], ['active', `In progress ${n('active')}`], ['closed', `Closed ${n('closed')}`], ['all', `All ${n('all')}`]],
             IN.status, v => { IN.status = v; draw(); }, 'Triage status'),
-          seg([['date', 'Newest'], ['sev', 'Most severe']], IN.sort, v => { IN.sort = v; draw(); }, 'Sort')),
-        h('div', { class: 'row' }, chips(IN.sev, 'sev', [['critical', 'Critical'], ['high', 'High'], ['medium', 'Medium']]),
+          narrow && h('button', { class: 'chip', type: 'button', 'aria-expanded': String(!!IN.open), onclick: () => { IN.open = !IN.open; draw(); } },
+            IN.open ? 'Hide filters' : 'Filter and sort', active ? h('span', { class: 'n', text: `${active} on` }) : null),
+          open && seg([['date', 'Newest'], ['sev', 'Most severe']], IN.sort, v => { IN.sort = v; draw(); }, 'Sort')),
+        open && h('div', { class: 'row' }, chips(IN.sev, 'sev', [['critical', 'Critical'], ['high', 'High'], ['medium', 'Medium']]),
           chips(IN.type, 'type', Object.entries(TYPE_LABEL)), chips(IN.origin, 'origin', [['EWR', 'EWR'], ['JFK', 'JFK'], ['LGA', 'LGA']])),
-        search);
+        open && search);
     };
     const drawList = () => {
       const rows = D.alerts.filter(a => passes(a)).sort((a, b) =>
@@ -97,7 +114,7 @@ VIEW.inbox = {
             h('span', { class: 'route' }, a.o, h('span', { class: 'arr', text: '→' }), a.d),
             h('span', { class: 'what' }, sevMark(a.sev), h('span', { text: TYPE_LABEL[a.type] }), h('span', { class: 'muted', text: alertWhen(a) }),
               t.status !== 'open' && statusPill(t.status), t.assignee && h('span', { class: 'muted', text: t.assignee }))),
-          h('span', { class: 'stat' }, h('b', { text: big }), h('span', { text: small })));
+          h('span', { class: 'stat' }, h('b', { text: big }), h('span', { text: small }), a.b_route != null && h('span', { text: `usual ${BASE_FMT[a.type](a.b_route)}` })));
       }));
       if (!rows.length) bay.append(h('p', { class: 'muted', text: 'No alerts match these filters. Clear a filter to see more.' }));
     };
@@ -212,6 +229,7 @@ DETAIL.alert = {
         h('div', { class: 'row' }, sevMark(a.sev), h('span', { class: 'muted', text: alertWhen(a) }), h('span', { class: 'muted', text: a.id }))),
       h('p', { text: a.summary }),
       h('section', { class: 'sect' }, h('h2', { text: 'Why this fired' }), whyBlock(a)),
+      baselineBlock(a),
       h('section', { class: 'sect' }, alertChart(a)),
       h('section', { class: 'sect' }, h('h2', { text: 'Context' }), kv([
         ['Route', link('route', a.route, `${a.o} → ${a.d}`)],

@@ -305,6 +305,20 @@ def metrics_origin_daily(ctx):
     """
 
 
+@dataset("metrics/route_monthly", group=METRICS, layer="metrics", inputs=["delays/flights"],
+         pk=["route_id", "month"],
+         description="Per route and month: the seasonal baseline shown beside each alert and used by live mode.")
+def metrics_route_monthly(ctx):
+    return f"select route_id, origin, dest, month, {AGG} from delays__flights group by all"
+
+
+@dataset("metrics/origin_month_hour", group=METRICS, layer="metrics", inputs=["delays/flights"],
+         pk=["origin", "month", "sched_dep_hour"],
+         description="Per origin, month and scheduled hour: what is normal for this airport at this time of year and day.")
+def metrics_origin_month_hour(ctx):
+    return f"select origin, month, sched_dep_hour, {AGG} from delays__flights group by all"
+
+
 @dataset("metrics/hourly_profile", group=METRICS, layer="metrics", inputs=["delays/flights"],
          pk=["origin", "sched_dep_hour"],
          description="Per origin and scheduled departure hour: how delay builds through the day.")

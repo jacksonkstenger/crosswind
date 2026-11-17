@@ -131,9 +131,30 @@ def route_alerts(ctx):
 
     alerts = []
 
+    # Baseline rates: the alerted metric for the route (year and month), its origin and all flights.
+    def acc():
+        return {"flights": 0, "cancelled": 0, "departed": 0, "arrived": 0, "arr_late": 0, "sum_dep": 0}
+    totals = defaultdict(acc)
+    for r in rd:
+        for key in (("route", r["route_id"]), ("month", r["route_id"], r["flight_date"].month), ("origin", r["origin"]), ("all",)):
+            t = totals[key]
+            for f in ("flights", "cancelled", "departed", "arrived", "arr_late"):
+                t[f] += r[f]
+            t["sum_dep"] += r["sum_dep_delay"] or 0
+    rate = {
+        "delay_spike": lambda t: t["sum_dep"] / t["departed"] if t["departed"] else None,
+        "cancellation_cluster": lambda t: t["cancelled"] / t["flights"] if t["flights"] else None,
+        "chronic_lateness": lambda t: t["arr_late"] / t["arrived"] if t["arrived"] else None,
+    }
+    eligible = defaultdict(int)      # how many route-days (or route-weeks) each detector examined
+
     def base(kind, code, r, date, period_end, daily=True):
         o = od.get((r["origin"], date), {}) if daily else {}
         return {
+            "base_route": rate[kind](totals[("route", r["route_id"])]),
+            "base_route_month": rate[kind](totals[("month", r["route_id"], date.month)]),
+            "base_origin": rate[kind](totals[("origin", r["origin"])]),
+            "base_all": rate[kind](totals[("all",)]),
             "alert_id": f"RA-{code}-{r['route_id']}-{date.strftime('%Y%m%d')}",
             "alert_type": kind, "route_id": r["route_id"], "origin": r["origin"], "dest": r["dest"],
             "alert_date": date, "period_end": period_end,
@@ -162,6 +183,8 @@ def route_alerts(ctx):
                     if date - timedelta(days=k) in excess]
             if len(hist) < SPIKE_MIN_BASELINE:
                 continue
+            eligible[("delay_spike", route)] += 1
+            eligible[("delay_spike",)] += 1
             med = median(hist)
             mad = median(abs(h - med) for h in hist)
             scale = max(1.4826 * mad, SPIKE_SCALE_FLOOR)
@@ -204,6 +227,8 @@ def route_alerts(ctx):
             rest_n = o["flights"] - n
             p_origin = (o["cancelled"] - c) / rest_n if rest_n > 0 else 0.0
             p0 = max(p_route, p_origin)
+            eligible[("cancellation_cluster", route)] += 1
+            eligible[("cancellation_cluster",)] += 1
             tests.append((binom_sf(c, n, p0), r, date, p0, p_route, p_origin, N))
     rejected, adjusted = benjamini_hochberg([t[0] for t in tests], CANCEL_FDR_Q)
     for (pval, r, date, p0, p_route, p_origin, N), rej, adj in zip(tests, rejected, adjusted):
@@ -236,6 +261,8 @@ def route_alerts(ctx):
     flagged = {}
     for (route, ws), w in weeks.items():
         if w["n"] >= CHRONIC_MIN_ARRIVALS:
+            eligible[("chronic_lateness", route)] += 1
+            eligible[("chronic_lateness",)] += 1
             lb = wilson_lower(w["k"], w["n"], CHRONIC_Z)
             if lb > CHRONIC_THRESHOLD:
                 flagged[(route, ws)] = (lb, w)
@@ -259,6 +286,14 @@ def route_alerts(ctx):
         })
         alerts.append(a)
 
+    fired = defaultdict(int)
+    for a in alerts:
+        fired[(a["alert_type"], a["route_id"])] += 1
+        fired[(a["alert_type"],)] += 1
+    for a in alerts:
+        k = a["alert_type"]
+        a.update(eligible_route=eligible[(k, a["route_id"])], fired_route=fired[(k, a["route_id"])],
+                 eligible_all=eligible[(k,)], fired_all=fired[(k,)])
     alerts.sort(key=lambda a: (a["alert_date"], a["alert_id"]))
     schema = pa.schema([
         ("alert_id", pa.string()), ("alert_type", pa.string()), ("severity", pa.string()),
@@ -271,6 +306,9 @@ def route_alerts(ctx):
         ("reference_value", pa.float64()), ("streak_weeks", pa.int32()),
         ("origin_disrupted", pa.bool_()), ("wx_visibility_min_mi", pa.float64()),
         ("wx_gust_max_mph", pa.float64()), ("wx_precip_total_in", pa.float64()),
+        ("base_route", pa.float64()), ("base_route_month", pa.float64()), ("base_origin", pa.float64()),
+        ("base_all", pa.float64()), ("eligible_route", pa.int32()), ("fired_route", pa.int32()),
+        ("eligible_all", pa.int32()), ("fired_all", pa.int32()),
         ("detector_version", pa.string()),
     ])
     table = pa.Table.from_pylist(alerts, schema=schema)

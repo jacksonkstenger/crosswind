@@ -1,3 +1,8 @@
 /data/
 __pycache__/
 *.pyc
+# written by the live job at deploy time
+app/data/live.json
+app/data/live_history.json
+app/data/live_faa.xml
+app/data/live_metar.json

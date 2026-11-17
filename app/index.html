@@ -63,26 +63,26 @@ p{margin:0}
 .boot{padding:24px 16px;color:var(--ink-2)}
 
 /* ---- shell ---- */
-#app{height:100%;display:grid;grid-template-columns:1fr;grid-template-rows:1fr auto}
-#main{overflow:auto;min-width:0;grid-row:1}
-#nav{grid-row:2;display:flex;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0)}
+#app{height:100%;display:grid;grid-template-columns:1fr;grid-template-rows:auto 1fr auto}
+#top{grid-column:1/-1;grid-row:1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+#top .brand{display:flex;align-items:center;gap:8px;font-weight:750;font-stretch:80%;font-size:17px}
+#top .brand svg{width:22px;height:22px;color:var(--accent)}
+#main{overflow:auto;min-width:0;grid-row:2}
+#nav{grid-row:3;display:flex;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0)}
 #nav button{flex:1;min-width:0;border:0;background:none;padding:7px 2px 6px;display:grid;justify-items:center;gap:2px;
   font-size:11px;font-weight:600;color:var(--ink-3);font-stretch:85%}
 #nav button svg{width:22px;height:22px}
 #nav button[aria-current="page"]{color:var(--accent)}
-#nav .brand{display:none}
 #drawer{position:fixed;inset:0;z-index:20;background:var(--paper);overflow:auto;overscroll-behavior:contain}
 .view{padding:16px 16px 28px;display:grid;gap:18px;max-width:1180px}
 .view-head{display:grid;gap:4px}
 .lede{color:var(--ink-2);max-width:66ch}
 @media (min-width:900px){
-  #app{grid-template-columns:var(--nav) minmax(0,1fr) auto;grid-template-rows:1fr}
-  #nav{grid-row:1;grid-column:1;flex-direction:column;border-top:0;border-right:1px solid var(--line);padding:10px 0;gap:4px}
+  #app{grid-template-columns:var(--nav) minmax(0,1fr) auto;grid-template-rows:auto 1fr}
+  #nav{grid-row:2;grid-column:1;flex-direction:column;border-top:0;border-right:1px solid var(--line);padding:10px 0;gap:4px}
   #nav button{flex:none;padding:9px 2px}
-  #nav .brand{display:grid;place-items:center;height:40px;margin-bottom:8px;color:var(--accent)}
-  #nav .brand svg{width:28px;height:28px}
-  #main{grid-row:1;grid-column:2}
-  #drawer{position:static;grid-column:3;width:min(480px,42vw);border-left:1px solid var(--line);background:var(--surface)}
+  #main{grid-row:2;grid-column:2}
+  #drawer{position:static;grid-row:2;grid-column:3;width:min(480px,42vw);border-left:1px solid var(--line);background:var(--surface)}
   .view{padding:24px 28px 40px}
   .view>.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
@@ -220,10 +220,37 @@ details.q pre{font-size:11px;overflow:auto;background:var(--paper);border:1px so
   @keyframes slide{from{transform:translateX(18px);opacity:.4}to{transform:none;opacity:1}}
 }
 
+/* ---- touch ---- */
+@media (pointer:coarse){
+  .chip{padding:8px 13px}
+  .seg button{padding:9px 12px}
+  .btn{padding:10px 14px}
+  .icon-btn{width:42px;height:42px}
+  th button{padding:5px 0}
+  .linkish{padding:3px 0}
+  tbody tr.click td{padding-top:9px;padding-bottom:9px}
+}
+@media (max-width:619px){
+  .view{gap:14px;padding-top:14px}
+  .view-head .lede{font-size:14px}
+  h1{font-size:22px}
+}
+
+/* ---- live mode ---- */
+.cards{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.card{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:12px 14px;display:grid;gap:8px;align-content:start}
+.card-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card-head .code{font-size:22px;line-height:1}
+.card p{font-size:13px}
+.lstat{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;white-space:nowrap}
+.lstat svg{width:14px;height:14px;flex:none}
+.lstat[data-r="0"] svg{color:var(--good)} .lstat[data-r="1"] svg{color:var(--warning)} .lstat[data-r="2"] svg{color:var(--serious)} .lstat[data-r="3"] svg{color:var(--critical)}
+
 </style>
 </head>
 <body>
 <div id="app">
+  <header id="top"></header>
   <nav id="nav" aria-label="Views"></nav>
   <main id="main" tabindex="-1"><p class="boot">Loading flight data…</p></main>
   <aside id="drawer" aria-label="Details" hidden></aside>
@@ -294,7 +321,7 @@ const ICONS = {
   inbox: 'M4 6h16M4 12h16M4 18h10', map: 'M12 3l2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6z',
   explore: 'M5 5h6v6H5zM13 5h6v6h-6zM5 13h6v6H5zM13 13h6v6h-6z', delays: 'M12 4a8 8 0 100 16 8 8 0 000-16zM12 8v4.5l3 1.8',
   pipeline: 'M3 6h5v4H3zM16 4h5v4h-5zM16 15h5v4h-5zM8 8h4V6h4M12 8v9h4', ask: 'M4 5h16v11H10l-5 4v-4H4z',
-  back: 'M15 5l-7 7 7 7', close: 'M6 6l12 12M18 6L6 18',
+  now: 'M3 12h4l3-7 4 14 3-7h4', back: 'M15 5l-7 7 7 7', close: 'M6 6l12 12M18 6L6 18',
   brand: 'M3 14c4-6 7-6 9 0s5 6 9 0M3 8c4-5 7-5 9 0s5 5 9 0',
 };
 const icon = name => s('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8,
@@ -346,10 +373,15 @@ const need = name => (pending[name] ??= getJSON(name).then(v => {
 const index = (rows, key = 'id') => new Map(rows.map(r => [r[key], r]));
 
 // ---------- state + routing ----------
-const VIEWS = [['inbox', 'Alerts'], ['map', 'Map'], ['explore', 'Objects'], ['delays', 'Delays'], ['pipeline', 'Pipeline'], ['ask', 'Ask']];
+// Two separate modes: the live feeds, and the 2013 archive.
+const MODES = { live: [['now', 'Now'], ['live-map', 'Map']],
+  archive: [['inbox', 'Alerts'], ['map', 'Map'], ['explore', 'Objects'], ['delays', 'Delays'], ['pipeline', 'Pipeline'], ['ask', 'Ask']] };
+const VIEWS = [...MODES.live, ...MODES.archive];
+const modeOf = v => (MODES.live.some(x => x[0] === v) ? 'live' : 'archive');
+const NAV_ICON = { 'live-map': 'map' };
 const VIEW = {};      // name -> { render(root) }
 const DETAIL = {};    // object type -> { kind, get(id), render(obj), title(obj) }
-const S = { view: 'inbox', stack: [], selfHash: null, width: innerWidth, askReady: false };
+const S = { view: 'inbox', home: 'inbox', last: { live: 'now', archive: 'inbox' }, stack: [], selfHash: null, width: innerWidth, askReady: false };
 const HASHABLE = ['alert', 'route', 'airline', 'airport', 'aircraft', 'day'];
 
 function hashFor(top) {
@@ -363,10 +395,10 @@ function syncHash() {
 function applyHash(initial) {
   const x = location.hash.slice(1), m = /^([a-z]+)-(.+)$/.exec(x);
   if (m && HASHABLE.includes(m[1])) {
-    if (initial) S.view = m[1] === 'alert' ? 'inbox' : 'explore';
+    if (initial || modeOf(S.view) === 'live') S.view = m[1] === 'alert' ? 'inbox' : 'explore';
     S.stack = [{ type: m[1], id: m[1] === 'day' ? m[2].replace('-', '_') : m[2] }];
   } else {
-    S.view = VIEWS.some(v => v[0] === x) && (x !== 'ask' || S.askReady) ? x : (initial ? 'inbox' : S.view);
+    S.view = VIEWS.some(v => v[0] === x) && (x !== 'ask' || S.askReady) ? x : (initial ? S.home : S.view);
     S.stack = [];
   }
   renderAll();
@@ -384,10 +416,13 @@ const selected = type => { const t = S.stack.at(-1); return t && t.type === type
 const link = (type, id, label) => h('button', { class: 'linkish', type: 'button', onclick: e => { e.stopPropagation(); openObj(type, id); } }, label ?? id);
 
 function renderNav() {
-  $('#nav').replaceChildren(h('span', { class: 'brand', title: 'Crosswind' }, icon('brand')),
-    ...VIEWS.filter(([id]) => id !== 'ask' || S.askReady).map(([id, label]) =>
-      h('button', { type: 'button', 'aria-current': S.view === id ? 'page' : null, onclick: () => setView(id) },
-        icon(id === 'explore' ? 'explore' : id), label)));
+  const mode = modeOf(S.view);
+  S.last[mode] = S.view;
+  $('#top').replaceChildren(h('span', { class: 'brand' }, icon('brand'), 'Crosswind'),
+    seg([['live', 'Live'], ['archive', '2013']], mode, m => { if (m !== mode) setView(S.last[m]); }, 'Data mode'));
+  $('#nav').replaceChildren(...MODES[mode].filter(([id]) => id !== 'ask' || S.askReady).map(([id, label]) =>
+    h('button', { type: 'button', 'aria-current': S.view === id ? 'page' : null, onclick: () => setView(id) },
+      icon(NAV_ICON[id] || id), label)));
 }
 function renderDrawer() {
   const el = $('#drawer'), top = S.stack.at(-1);
@@ -634,7 +669,7 @@ const Triage = {
 };
 
 // ---------- inbox ----------
-const IN = { status: 'open', sev: new Set(), type: new Set(), origin: new Set(), q: '', sort: 'date' };
+const IN = { status: 'open', sev: new Set(), type: new Set(), origin: new Set(), q: '', sort: 'date', open: false };
 const STATUS_GROUP = { open: ['open'], active: ['acknowledged', 'investigating'], closed: ['resolved', 'dismissed'] };
 const SEV_RANK = { critical: 0, high: 1, medium: 2 };
 const alertWhen = a => a.type === 'chronic_lateness' ? `week of ${F.date(a.date)}` : F.date(a.date);
@@ -642,6 +677,18 @@ function alertStat(a) {
   if (a.type === 'delay_spike') return [`${Math.round(a.observed)} min`, 'mean departure delay'];
   if (a.type === 'cancellation_cluster') return [`${Math.round(a.observed * a.n)} of ${a.n}`, 'flights cancelled'];
   return [F.pct(a.observed), 'arrived 15+ min late'];
+}
+const BASE_FMT = { delay_spike: v => `${Math.round(v)} min`, cancellation_cluster: v => F.pct(v, 1), chronic_lateness: v => F.pct(v) };
+const BASE_NAME = { delay_spike: 'Mean departure delay', cancellation_cluster: 'Share of flights cancelled', chronic_lateness: 'Share of arrivals 15+ min late' };
+function baselineBlock(a) {
+  const f = BASE_FMT[a.type], unit = a.type === 'chronic_lateness' ? 'week' : 'day', month = MONTHS[+a.date.slice(5, 7) - 1];
+  const rows = [[`This ${unit}`, a.observed, true], [`This route in ${month}`, a.b_month], ['This route, all of 2013', a.b_route],
+    [`All ${a.o} departures, 2013`, a.b_origin], ['All flights, 2013', a.b_all]].filter(r => r[1] != null);
+  const times = a.b_route > 0 ? a.observed / a.b_route : null;
+  return h('section', { class: 'sect' }, h('h2', { text: 'Baseline' }),
+    h('p', { class: 'note', text: `${BASE_NAME[a.type]}.${times ? ` This ${unit} ran at ${F.num(times, 1)} times the route's rate for the year.` : ''}` }),
+    hbars(rows.map(([label, v, hi]) => ({ label, value: Math.max(0, v), text: f(v), color: hi ? PAL.series[0] : PAL.quiet }))),
+    h('p', { class: 'note', text: `How often this detector fires: on ${F.int(a.fired)} of ${F.int(a.elig)} route-${unit}s it examined in 2013 (${F.pct(a.fired / a.elig, 2)}), and on ${a.fired_r} of ${F.int(a.elig_r)} for this route.` }));
 }
 function toggleSet(set, v) { set.has(v) ? set.delete(v) : set.add(v); }
 
@@ -659,14 +706,19 @@ VIEW.inbox = {
         label, h('span', { class: 'n', text: D.alerts.filter(a => passes(a, key) && a[key === 'origin' ? 'o' : key] === v).length })));
     const drawControls = () => {
       const n = g => D.alerts.filter(a => passes(a, 'status') && (g === 'all' || STATUS_GROUP[g].includes(Triage.get(a.id).status))).length;
-      controls.replaceChildren(
+      // On a phone the filters fold away so the first alerts sit above the fold.
+      const narrow = innerWidth < 620, open = !narrow || IN.open, active = IN.sev.size + IN.type.size + IN.origin.size + (IN.q ? 1 : 0);
+      controls.replaceChildren();
+      put(controls,
         h('div', { class: 'row' },
           seg([['open', `Open ${n('open')}`], ['active', `In progress ${n('active')}`], ['closed', `Closed ${n('closed')}`], ['all', `All ${n('all')}`]],
             IN.status, v => { IN.status = v; draw(); }, 'Triage status'),
-          seg([['date', 'Newest'], ['sev', 'Most severe']], IN.sort, v => { IN.sort = v; draw(); }, 'Sort')),
-        h('div', { class: 'row' }, chips(IN.sev, 'sev', [['critical', 'Critical'], ['high', 'High'], ['medium', 'Medium']]),
+          narrow && h('button', { class: 'chip', type: 'button', 'aria-expanded': String(!!IN.open), onclick: () => { IN.open = !IN.open; draw(); } },
+            IN.open ? 'Hide filters' : 'Filter and sort', active ? h('span', { class: 'n', text: `${active} on` }) : null),
+          open && seg([['date', 'Newest'], ['sev', 'Most severe']], IN.sort, v => { IN.sort = v; draw(); }, 'Sort')),
+        open && h('div', { class: 'row' }, chips(IN.sev, 'sev', [['critical', 'Critical'], ['high', 'High'], ['medium', 'Medium']]),
           chips(IN.type, 'type', Object.entries(TYPE_LABEL)), chips(IN.origin, 'origin', [['EWR', 'EWR'], ['JFK', 'JFK'], ['LGA', 'LGA']])),
-        search);
+        open && search);
     };
     const drawList = () => {
       const rows = D.alerts.filter(a => passes(a)).sort((a, b) =>
@@ -682,7 +734,7 @@ VIEW.inbox = {
             h('span', { class: 'route' }, a.o, h('span', { class: 'arr', text: '→' }), a.d),
             h('span', { class: 'what' }, sevMark(a.sev), h('span', { text: TYPE_LABEL[a.type] }), h('span', { class: 'muted', text: alertWhen(a) }),
               t.status !== 'open' && statusPill(t.status), t.assignee && h('span', { class: 'muted', text: t.assignee }))),
-          h('span', { class: 'stat' }, h('b', { text: big }), h('span', { text: small })));
+          h('span', { class: 'stat' }, h('b', { text: big }), h('span', { text: small }), a.b_route != null && h('span', { text: `usual ${BASE_FMT[a.type](a.b_route)}` })));
       }));
       if (!rows.length) bay.append(h('p', { class: 'muted', text: 'No alerts match these filters. Clear a filter to see more.' }));
     };
@@ -797,6 +849,7 @@ DETAIL.alert = {
         h('div', { class: 'row' }, sevMark(a.sev), h('span', { class: 'muted', text: alertWhen(a) }), h('span', { class: 'muted', text: a.id }))),
       h('p', { text: a.summary }),
       h('section', { class: 'sect' }, h('h2', { text: 'Why this fired' }), whyBlock(a)),
+      baselineBlock(a),
       h('section', { class: 'sect' }, alertChart(a)),
       h('section', { class: 'sect' }, h('h2', { text: 'Context' }), kv([
         ['Route', link('route', a.route, `${a.o} → ${a.d}`)],
@@ -831,6 +884,9 @@ const METRICS = {
     color: v => (v ? PAL.seq(0.25 + 0.75 * v / 12) : PAL.quiet), legend: () => ['1', '6', '12 or more'], stops: () => [0.25, 0.45, 0.65, 0.85, 1].map(PAL.seq) },
 };
 
+METRICS.live = { label: 'Live FAA status', fmt: v => LIVE_STATUS[v][0], worstFirst: (a, b) => b - a,
+  color: v => (v ? cssVar(LIVE_STATUS[v][1]) : PAL.quiet) };
+const mapKey = () => (S.view === 'live-map' ? 'live' : MP.metric);
 function mapRoutes() { return D.routes.filter(r => (MP.origin === 'all' || r.o === MP.origin) && r.o !== r.d && D.byId.airport.get(r.d).miles > 30); }
 function destStats(routes) {
   const m = new Map();
@@ -838,12 +894,13 @@ function destStats(routes) {
     const d = m.get(r.d) || m.set(r.d, { id: r.d, flights: 0, arrived: 0, late: 0, cancelled: 0, alerts: 0, routes: [] }).get(r.d);
     d.flights += r.flights; d.arrived += r.arrived; d.late += r.arrived * (1 - r.on_time); d.cancelled += r.cancelled; d.alerts += r.alerts; d.routes.push(r);
   }
-  for (const d of m.values()) { d.on_time = d.arrived ? 1 - d.late / d.arrived : null; d.cancel_rate = d.cancelled / d.flights; }
+  for (const d of m.values()) { d.on_time = d.arrived ? 1 - d.late / d.arrived : null; d.cancel_rate = d.cancelled / d.flights; d.live = Live.rank(d.id); }
   return m;
 }
 
 function drawMap(width) {
-  const geo = D.geo, metric = METRICS[MP.metric], routes = mapRoutes(), dests = destStats(routes);
+  const key = mapKey(), geo = D.geo, metric = METRICS[key], routes = mapRoutes(), dests = destStats(routes);
+  if (key === 'live') for (const r of routes) r.live = Live.rank(r.d);
   const inView = [...dests.keys()].map(id => D.byId.airport.get(id)).filter(a => MP.zoom === 'all' || a.miles <= 2800);
   const xs = inView.map(a => a.x).concat(0), ys = inView.map(a => a.y).concat(0);
   let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
@@ -861,10 +918,10 @@ function drawMap(width) {
       s('text', { x: X(miles * 0.259), y: Y(miles * 0.966) + 3, 'text-anchor': 'middle', style: 'font-size:10px;paint-order:stroke;stroke:var(--surface);stroke-width:3px' }, `${F.int(miles)} mi`));
   }
   const maxF = Math.max(...routes.map(r => r.flights)), lines = s('g');
-  const ordered = [...routes].sort((a, b) => metric.worstFirst(b[MP.metric], a[MP.metric]));
+  const ordered = [...routes].sort((a, b) => metric.worstFirst(b[key], a[key]));
   for (const r of ordered) {
     const o = D.byId.airport.get(r.o), d = D.byId.airport.get(r.d), dim = MP.sel && r.d !== MP.sel;
-    lines.append(s('line', { x1: X(o.x), y1: Y(o.y), x2: X(d.x), y2: Y(d.y), stroke: metric.color(r[MP.metric]),
+    lines.append(s('line', { x1: X(o.x), y1: Y(o.y), x2: X(d.x), y2: Y(d.y), stroke: metric.color(r[key]),
       'stroke-width': (0.7 + 2.6 * Math.sqrt(r.flights / maxF)).toFixed(2), 'stroke-linecap': 'round', opacity: dim ? 0.1 : 0.8 }));
   }
   svg.append(lines);
@@ -876,7 +933,7 @@ function drawMap(width) {
     const a = D.byId.airport.get(d.id), cx = X(a.x), cy = Y(a.y);
     if (cx < -20 || cx > width + 20 || cy < -20 || cy > height + 20) return;
     const r = 2.5 + 5.5 * Math.sqrt(d.flights / maxD), g = s('g', { opacity: MP.sel && MP.sel !== d.id ? 0.35 : 1 });
-    g.append(s('circle', { cx, cy, r, fill: metric.color(d[MP.metric]), stroke: MP.sel === d.id ? 'var(--accent)' : PAL.surface, 'stroke-width': MP.sel === d.id ? 2.5 : 1.5 }));
+    g.append(s('circle', { cx, cy, r, fill: metric.color(d[key]), stroke: MP.sel === d.id ? 'var(--accent)' : PAL.surface, 'stroke-width': MP.sel === d.id ? 2.5 : 1.5 }));
     const box = [cx + r + 2, cy - 7, cx + r + 2 + 24, cy + 6];
     if ((rank < labelCount || MP.sel === d.id) && !placed.some(p => box[0] < p[2] && box[2] > p[0] && box[1] < p[3] && box[3] > p[1])) {
       placed.push(box);
@@ -884,8 +941,8 @@ function drawMap(width) {
     }
     // Keyboard target only; pointer input goes through the nearest-airport layer below.
     const hit = s('circle', { cx, cy, r: r + 3, fill: 'transparent', tabindex: 0, role: 'button', style: 'pointer-events:none',
-      'aria-label': `${a.name}, ${metric.label} ${metric.fmt(d[MP.metric])}` });
-    const tip = () => tipRows(`${d.id}  ${a.name}`, [[metric.label.toLowerCase(), metric.fmt(d[MP.metric])], ['flights', F.int(d.flights)], ['miles', F.int(a.miles)]]);
+      'aria-label': `${a.name}, ${metric.label} ${metric.fmt(d[key])}` });
+    const tip = () => tipRows(`${d.id}  ${a.name}`, [[metric.label.toLowerCase(), metric.fmt(d[key])], ['flights', F.int(d.flights)], ['miles', F.int(a.miles)]]);
     const pick = () => { MP.sel = MP.sel === d.id ? null : d.id; VIEW.map.redraw(); };
     hit.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
     hit.addEventListener('focus', () => Tip.show({ clientX: svg.getBoundingClientRect().left + cx, clientY: svg.getBoundingClientRect().top + cy }, tip()));
@@ -915,26 +972,40 @@ VIEW.map = {
     const controls = h('div', { class: 'row' }), wrap = h('div', { class: 'mapwrap' }, h('p', { class: 'boot', text: 'Loading map…' }));
     const legend = h('div', { class: 'row', style: { fontSize: '12px', color: 'var(--ink-2)' } }), panel = h('div', { class: 'fig' }), list = h('div', { class: 'fig' });
     const redraw = () => {
-      controls.replaceChildren(
-        seg(Object.entries(METRICS).map(([key, m]) => [key, m.label]), MP.metric, v => { MP.metric = v; redraw(); }, 'Colour by'),
+      const live = mapKey() === 'live';
+      controls.replaceChildren();
+      put(controls,
+        !live && seg(Object.entries(METRICS).filter(([key]) => key !== 'live').map(([key, m]) => [key, m.label]), MP.metric, v => { MP.metric = v; redraw(); }, 'Colour by'),
         seg([['all', 'All origins'], ['EWR', 'EWR'], ['JFK', 'JFK'], ['LGA', 'LGA']], MP.origin, v => { MP.origin = v; redraw(); }, 'Origin'),
         seg([['mainland', 'Within 2,800 mi'], ['all', 'All destinations']], MP.zoom, v => { MP.zoom = v; redraw(); }, 'Zoom'));
       if (!D.geo) return;
-      const metric = METRICS[MP.metric], routes = mapRoutes(), dests = destStats(routes);
+      const metric = METRICS[mapKey()], routes = mapRoutes(), dests = destStats(routes);
       if (MP.sel && !dests.has(MP.sel)) MP.sel = null;
       wrap.replaceChildren(drawMap(Math.max(280, wrap.clientWidth || $('#main').clientWidth - 34)));
-      const [lo, mid, hi] = metric.legend();
-      legend.replaceChildren(h('span', { text: metric.label }), h('span', { text: lo }),
-        h('span', { style: { width: '120px', height: '10px', borderRadius: '2px', background: `linear-gradient(90deg, ${metric.stops().join(',')})` } }),
-        h('span', { text: hi }), h('span', { class: 'muted', text: `Middle: ${mid}. Line width and dot size show flights.` }));
+      if (live) {
+        legend.replaceChildren(...[0, 1, 2, 3].map(liveMark), h('span', { class: 'muted', text: `FAA feed, ${Live.age()}. Line width and dot size show 2013 flights.` }));
+      } else {
+        const [lo, mid, hi] = metric.legend();
+        legend.replaceChildren(h('span', { text: metric.label }), h('span', { text: lo }),
+          h('span', { style: { width: '120px', height: '10px', borderRadius: '2px', background: `linear-gradient(90deg, ${metric.stops().join(',')})` } }),
+          h('span', { text: hi }), h('span', { class: 'muted', text: `Middle: ${mid}. Line width and dot size show flights.` }));
+      }
       const sel = MP.sel && dests.get(MP.sel);
       panel.replaceChildren(...(sel ? [
         h('div', { class: 'fig-head' }, h('h2', null, link('airport', sel.id, `${sel.id}  ${D.byId.airport.get(sel.id).name}`)),
           h('button', { class: 'linkish', type: 'button', onclick: () => { MP.sel = null; redraw(); } }, 'Clear selection')),
+        live && (Live.data.alerts.some(x => x.airport === sel.id) ? h('div', { class: 'bay' }, Live.data.alerts.filter(x => x.airport === sel.id).map(liveStrip))
+          : h('p', { class: 'note', text: `${LIVE_STATUS[Live.rank(sel.id)][0]} now. The table shows the 2013 record.` })),
         simpleTable([{ label: 'Route', render: r => link('route', r.id, `${r.o} → ${r.d}`) }, { key: 'flights', label: 'Flights', num: true, fmt: F.int },
           { key: 'on_time', label: 'On time', num: true, fmt: v => F.pct(v) }, { key: 'mean_arr', label: 'Mean arr. delay', num: true, fmt: F.smin },
           { key: 'cancel_rate', label: 'Cancelled', num: true, fmt: v => F.pct(v, 1) }, { key: 'alerts', label: 'Alerts', num: true }], sel.routes)]
         : [h('p', { class: 'note', text: 'Select an airport on the map to see its routes.' })]));
+      if (live) {
+        const hit = Live.data.alerts.filter(x => x.scope === 'destination' && (MP.origin === 'all' || x.routes.some(r => r.startsWith(MP.origin))));
+        list.replaceChildren(); put(list, h('h2', { text: `Destinations with an FAA programme now (${hit.length})` }),
+          hit.length ? h('div', { class: 'bay' }, hit.map(liveStrip)) : h('p', { class: 'note', text: 'None. Every destination served from New York is operating normally.' }));
+        return;
+      }
       list.replaceChildren(h('h2', { text: `Routes, worst ${metric.label.toLowerCase()} first` }),
         dataTable({ rows: routes.filter(r => r.flights >= 200), page: 12, sort: { key: MP.metric, dir: MP.metric === 'on_time' ? 'asc' : 'desc' }, onRow: r => openObj('route', r.id, true),
           cols: [{ key: 'id', label: 'Route', render: r => `${r.o} → ${r.d}` }, { key: 'dest_name', label: 'Destination' }, { key: 'flights', label: 'Flights', num: true, fmt: F.int },
@@ -943,12 +1014,15 @@ VIEW.map = {
         h('p', { class: 'note', text: 'Routes with at least 200 flights in the year.' }));
     };
     this.redraw = redraw;
-    put(root, viewHead('Route map', 'Azimuthal equidistant projection centred on New York. Distance and bearing from the city are true, so each route is a straight great-circle line and the range rings are circles.'),
+    if (mapKey() === 'live' && Live.state !== 'ok') { put(root, liveUnavailable()); return; }
+    put(root, mapKey() === 'live' ? viewHead('Live map', 'Airports coloured by their current FAA status. A ground stop or delay programme at a destination holds the New York flights bound for it.')
+      : viewHead('Route map', 'Azimuthal equidistant projection centred on New York. Distance and bearing from the city are true, so each route is a straight great-circle line and the range rings are circles.'),
       controls, wrap, legend, panel, h('section', { class: 'sect' }, list));
     redraw();
     need('geo').then(() => { if (wrap.isConnected) redraw(); }).catch(err => wrap.replaceChildren(h('p', { class: 'boot', text: `The map outline could not load (${err.message}). The route table below still works.` })));
   },
 };
+VIEW['live-map'] = VIEW.map;
 
 // ---------- object explorer: one table per object type, every row opens the object ----------
 const EX = { type: 'route', q: '' };
@@ -1511,8 +1585,122 @@ function initAsk() {
   }).catch(() => {});
 }
 
+// ---------- live mode: current FAA status and weather, beside 2013 baselines ----------
+const LIVE_SITE = 'https://jacksonkstenger.github.io/crosswind/';
+const LIVE_STATUS = [['Normal', '--good', 'M12 3a9 9 0 100 18 9 9 0 000-18z'], ['Delays', '--warning', SEV_SHAPE.medium],
+  ['Ground stop', '--serious', SEV_SHAPE.high], ['Closed', '--critical', SEV_SHAPE.critical]];
+const liveMark = r => h('span', { class: 'lstat', 'data-r': r },
+  s('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true' }, s('path', { d: LIVE_STATUS[r][2], fill: 'currentColor' })), LIVE_STATUS[r][0]);
+const fmtMin = m => (m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min` : `${m} min`);
+const spanText = a => (a.min != null && a.max != null && a.min !== a.max ? `${a.min} to ${a.max} min` : (a.max ?? a.min) != null ? fmtMin(a.max ?? a.min) : null);
+const clock = iso => new Date(iso).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+
+const Live = {
+  data: null, history: [], state: 'loading',
+  async load() {
+    try {
+      const res = await fetch('data/live.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      this.data = await res.json(); this.state = 'ok';
+      const hist = await fetch('data/live_history.json', { cache: 'no-store' }).catch(() => null);
+      if (hist && hist.ok) this.history = await hist.json();
+    } catch (err) { if (!this.data) this.state = 'unavailable'; }
+    return this.state === 'ok';
+  },
+  rank(code) { return this.data?.status?.[code] ?? 0; },
+  age() {
+    const m = Math.max(0, Math.round((Date.now() - Date.parse(this.data.generated)) / 60000));
+    return m < 1 ? 'updated just now' : m < 90 ? `updated ${m} min ago` : m < 2880 ? `updated ${Math.round(m / 60)} h ago` : `last updated ${clock(this.data.generated)}`;
+  },
+};
+function liveUnavailable() {
+  const onSite = location.hostname.endsWith('github.io');
+  return [viewHead('Live', 'Live mode shows current FAA airport status and weather for New York departures, beside what was normal in 2013.'),
+    h('div', { class: 'banner' }, onSite ? 'The live data file has not been published yet. The scheduled job writes it every 15 minutes; check back shortly.'
+      : ['This copy of the page cannot reach outside data, so live mode runs on the public site, which refreshes every 15 minutes: ', h('a', { href: LIVE_SITE, text: LIVE_SITE })]),
+    h('p', { class: 'note', text: 'The 2013 archive works here in full. Switch with the control at the top.' })];
+}
+function liveStrip(a) {
+  const stat = a.kind === 'ground_stop' || a.kind === 'closure' ? [a.until ? `until ${a.until}` : 'in effect', a.label.toLowerCase()]
+    : a.avg != null ? [`avg ${fmtMin(a.avg)}`, 'assigned delay'] : [spanText(a) || 'in effect', a.label.toLowerCase()];
+  const from = a.routes.length === 1 ? a.routes[0].split('-')[0] : 'NYC';
+  return h('button', { class: 'strip', type: 'button', 'data-v': a.sev, 'data-id': a.id, onclick: () => openObj('live', a.id, true) },
+    h('span', { class: 'holder' }),
+    h('span', { class: 'cells' },
+      h('span', { class: 'route' }, a.scope === 'origin' ? a.airport : [from, h('span', { class: 'arr', text: '→' }), a.airport]),
+      h('span', { class: 'what' }, sevMark(a.sev), h('span', { text: a.label }), a.reason && h('span', { class: 'muted', text: a.reason }))),
+    h('span', { class: 'stat' }, h('b', { style: { fontSize: stat[0].length > 9 ? '14px' : null }, text: stat[0] }), h('span', { text: stat[1] })));
+}
+function airportCard(code, a) {
+  const w = a.weather, b = a.baseline;
+  const program = p => `${p.label}${p.avg != null ? `, averaging ${fmtMin(p.avg)}` : p.span ? `, ${p.span}` : ''}${p.trend ? `, ${p.trend.toLowerCase()}` : ''}${p.until ? `, until ${p.until}` : ''}${p.reason ? ` (${p.reason})` : ''}.`;
+  return h('div', { class: 'card' },
+    h('div', { class: 'card-head' }, link('airport', code, h('span', { class: 'code', text: code })), liveMark(a.status)),
+    h('p', { class: 'muted', text: a.name }),
+    a.programs.length ? a.programs.map(p => h('p', { text: program(p) })) : h('p', { text: 'No FAA programme in effect.' }),
+    h('p', { text: w ? `${w.category || 'Weather'}: visibility ${w.visibility_mi ?? '–'} mi, ${w.ceiling_ft != null ? `ceiling ${F.int(w.ceiling_ft)} ft` : 'no ceiling'}, wind ${w.wind_mph != null ? `${Math.round(w.wind_mph)} mph` : '–'}${w.gust_mph ? ` gusting ${Math.round(w.gust_mph)}` : ''}${w.temp_f != null ? `, ${Math.round(w.temp_f)} °F` : ''}${w.weather ? `, ${w.weather}` : ''}.` : 'Current weather is unavailable.' }),
+    b && h('p', { class: 'note', text: `Normal for ${b.scope}: ${Math.round(b.mean_dep)} min mean departure delay, ${F.pct(b.late_share)} left 15+ min late, ${F.pct(b.cancel_rate, 1)} cancelled.` }),
+    a.weather_baseline.length ? [h('h3', { text: '2013 departures in similar weather' }),
+      kv(a.weather_baseline.map(x => [`${x.dimension}: ${x.bin}`, `${Math.round(x.mean_dep)} min, ${F.pct(x.cancel_rate, 1)} cancelled`]))] : null);
+}
+function historyFigure() {
+  const pts = Live.history.filter(p => Date.now() - Date.parse(p.t) < 48 * 36e5);
+  if (pts.length < 3) return h('section', { class: 'sect' }, h('h2', { text: 'Last 48 hours' }), h('p', { class: 'note', text: 'History builds up as the site refreshes. Check back after a few updates.' }));
+  const t0 = Date.parse(pts[0].t), x = p => (Date.parse(p.t) - t0) / 6e4, span = x(pts.at(-1));
+  const label = v => new Date(t0 + v * 6e4).toLocaleString('en-US', span > 1440 ? { weekday: 'short', hour: 'numeric' } : { hour: 'numeric', minute: '2-digit' });
+  return h('section', { class: 'sect' }, figure({ title: 'Last 48 hours', sub: 'Counts at each refresh, on one axis',
+    legend: [['Alerts for New York departures', PAL.series[0]], ['FAA programmes nationwide', PAL.series[1]]],
+    chart: w => lineChart({ width: w, xTicks: [0, span / 3, 2 * span / 3, span], xFmt: label, tipTitle: label, yFmt: v => String(Math.round(v)),
+      series: [{ name: 'NYC', color: PAL.series[0], pts: pts.map(p => [x(p), p.alerts]) }, { name: 'US', color: PAL.series[1], pts: pts.map(p => [x(p), p.programs]) }] }),
+    table: { cols: [{ key: 't', label: 'Time', fmt: clock }, { key: 'alerts', label: 'Alerts for New York', num: true }, { key: 'programs', label: 'Programmes nationwide', num: true }], rows: [...pts].reverse().slice(0, 60) } }));
+}
+
+VIEW.now = {
+  render(root) {
+    if (Live.state !== 'ok') { put(root, liveUnavailable()); return; }
+    const L = Live.data, feeds = L.feeds || {};
+    const refresh = h('button', { class: 'btn', type: 'button', onclick: async () => { refresh.disabled = true; await Live.load(); renderAll(); } }, 'Refresh');
+    put(root, viewHead('Live', 'FAA airport status and weather for departures from Newark, Kennedy and LaGuardia, beside what was normal in 2013.'),
+      h('div', { class: 'row' }, refresh, h('span', { class: 'note', text: `${L.local.label}, ${Live.age()}.` })),
+      L.stale_since && h('div', { class: 'banner', text: `The FAA feed could not be read on the last check, so this is the picture from ${clock(L.stale_since)}.` }),
+      feeds.faa && !feeds.faa.ok && !L.stale_since && h('div', { class: 'banner', text: `The FAA feed could not be read (${feeds.faa.error}), so no programmes are shown.` }),
+      feeds.metar && !feeds.metar.ok && h('div', { class: 'banner', text: `Weather could not be read (${feeds.metar.error}).` }),
+      h('div', { class: 'cards' }, Object.entries(L.airports).map(([code, a]) => airportCard(code, a))),
+      h('section', { class: 'sect' }, h('h2', { text: `Live alerts (${L.alerts.length})` }),
+        h('p', { class: 'note', text: `${L.programs_total} FAA programmes are active nationwide. Shown here: those at the three New York airports, and those at any of the ${L.watched_destinations} destinations they served in 2013.` }),
+        L.alerts.length ? h('div', { class: 'bay' }, L.alerts.map(liveStrip)) : h('p', { text: 'No FAA programme affects New York departures or their destinations right now.' })),
+      historyFigure(),
+      h('section', { class: 'sect' }, h('h2', { text: 'Sources' }),
+        simpleTable([{ label: 'Feed', render: r => r[0] }, { label: 'Last read', wrap: true, render: r => (r[1] ? (r[1].ok ? `Read, ${F.int(r[1].items)} items, ${F.int(r[1].bytes)} bytes` : `Failed: ${r[1].error}`) : '–') }],
+          [['FAA airport status (nasstatus.faa.gov)', feeds.faa], ['Aviation Weather Center METAR', feeds.metar]]),
+        h('p', { class: 'note', text: 'The FAA feed lists traffic programmes by airport, not individual flights. A ground stop can exempt some origins, and the feed does not say which, so a destination alert means New York flights may be held. Baselines are 2013 figures from the archive mode.' })));
+  },
+};
+
+DETAIL.live = {
+  kind: 'Live alert', get: id => Live.data?.alerts.find(a => a.id === id),
+  render(a) {
+    const b = a.baseline || {}, all = Live.data.all_flights;
+    return [h('div', { class: 'fig' }, h('h1', { text: `${a.label} at ${a.airport}` }),
+      h('div', { class: 'row' }, sevMark(a.sev), link('airport', a.airport, a.airport_name))),
+      h('p', { text: a.summary }),
+      kv([['Reason given by the FAA', a.reason || 'none'], a.avg != null && ['Average assigned delay', fmtMin(a.avg)], spanText(a) && [a.min == null || a.min === a.max ? 'Longest delay' : 'Delay range', spanText(a)],
+        a.trend && ['Trend', a.trend], a.until && ['Until', a.until], ['First seen', clock(a.first_seen)]]),
+      a.scope === 'destination' ? h('section', { class: 'sect' }, h('h2', { text: 'Baseline for these routes' }),
+        h('p', { text: `In ${b.month} 2013 these routes ran about ${b.flights_per_day_month} flights a day, and ${F.pct(b.on_time_month)} arrived on time. Over the year it was ${F.pct(b.on_time_year)}, against ${F.pct(b.all_flights_on_time)} for all New York departures.` }),
+        simpleTable([{ label: 'Route', render: r => link('route', r.route, r.route.replace('-', ' → ')) }, { key: 'flights_month', label: `Flights, ${b.month}`, num: true, fmt: F.int },
+          { key: 'on_time_month', label: `On time, ${b.month}`, num: true, fmt: v => F.pct(v) }, { key: 'on_time_year', label: 'On time, 2013', num: true, fmt: v => F.pct(v) },
+          { key: 'mean_arr_month', label: `Mean arr. delay, ${b.month}`, num: true, fmt: F.smin }, { key: 'alerts_2013', label: '2013 alerts', num: true }], b.routes))
+        : h('section', { class: 'sect' }, h('h2', { text: 'Baseline for this hour' }),
+          b.now ? kv([[`Mean departure delay, ${b.now.scope}`, F.min(b.now.mean_dep)], ['Left 15+ min late', F.pct(b.now.late_share)], ['Cancelled', F.pct(b.now.cancel_rate, 1)],
+            ['All New York departures, 2013', `${F.min(all.mean_dep)}, ${F.pct(all.cancel_rate, 1)} cancelled`]]) : h('p', { class: 'note', text: 'No 2013 flights were scheduled at this hour.' })),
+      h('p', { class: 'note', text: 'Route and airport links open the 2013 archive.' })];
+  },
+};
+
 // ---------- boot ----------
 async function boot() {
+  const liveReady = Live.load();
   try {
     const [core, airports, routes, alerts, odays] = await Promise.all(['core', 'airports', 'routes', 'alerts', 'origin_days'].map(getJSON));
     Object.assign(D, { core, airports, routes, alerts, origin_days: odays, airlines: core.airlines });
@@ -1522,7 +1710,12 @@ async function boot() {
     return;
   }
   Triage.init(); initAsk();
+  S.home = (await liveReady) ? 'now' : 'inbox';      // open on live data where it exists, else the archive
   applyHash(true);
+  setInterval(() => {
+    if (modeOf(S.view) !== 'live' || document.hidden) return;
+    Live.load().then(() => { if (modeOf(S.view) === 'live' && !S.stack.length) renderAll(); });
+  }, 5 * 60 * 1000);
   window.addEventListener('hashchange', () => {
     if (S.selfHash === location.hash.slice(1)) { S.selfHash = null; return; }
     S.selfHash = null; applyHash(false);

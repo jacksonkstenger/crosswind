@@ -62,7 +62,7 @@ def _clean_row(r: dict, nd=2, keep4=()) -> dict:
 
 
 SHARES = ("cancel_rate", "on_time", "on_time_share", "late_share", "observed", "expected", "stat", "p", "ref",
-          "base_center")
+          "base_center", "b_route", "b_month", "b_origin", "b_all")
 
 
 def _write_lines(path: Path, records: list) -> None:
@@ -132,7 +132,7 @@ def export(con, lineage: dict, ontology: dict) -> None:
     airports = q("""select airport_id as id, airport_name as name, lat, lon, time_zone as tz, is_origin as origin,
                            flights, carriers, connected_airports as connected, mean_delay, on_time_share as on_time,
                            cancel_rate, record_source as source
-                    from ontology__airport order by flights desc""")
+                    from ontology__airport order by flights desc, airport_id""")
     nyc = [a for a in airports if a["origin"]]
     lat0 = sum(a["lat"] for a in nyc) / len(nyc)
     lon0 = sum(a["lon"] for a in nyc) / len(nyc)
@@ -148,7 +148,7 @@ def export(con, lineage: dict, ontology: dict) -> None:
                            flights, routes, cancelled, cancel_rate, on_time_share as on_time, mean_dep_delay as mean_dep,
                            mean_arr_delay as mean_arr, median_arr_delay as median_arr, tails_flown as tails,
                            registry_aircraft, models
-                    from ontology__airline order by flights desc""")
+                    from ontology__airline order by flights desc, airline_id""")
     monthly = q("""select carrier, month, flights, on_time_share as on_time, mean_arr_delay as mean_arr, cancel_rate
                    from metrics__carrier_monthly order by carrier, month""")
     for a in airlines:
@@ -160,13 +160,13 @@ def export(con, lineage: dict, ontology: dict) -> None:
     alert_counts = {r["route_id"]: r["n"] for r in q(
         "select route_id, count(*) as n from ontology__route_alert group by 1")}
     by_carrier = q("""select route_id, airline_id as id, flights, on_time_share as on_time, mean_arr_delay as mean_arr,
-                             cancel_rate from ontology__airline_route order by route_id, flights desc""")
+                             cancel_rate from ontology__airline_route order by route_id, flights desc, airline_id""")
     routes = q("""select route_id as id, origin_airport_id as o, dest_airport_id as d, dest_name, flights, cancelled,
                          departed, arrived, cancel_rate, on_time_share as on_time, mean_dep_delay as mean_dep,
                          mean_arr_delay as mean_arr, median_arr_delay as median_arr, p90_arr_delay as p90_arr,
                          days_operated as days, distance_mi as dist, great_circle_mi as gc,
                          median_air_time as air_time, mean_air_recovery as recovery
-                  from ontology__route order by flights desc""")
+                  from ontology__route order by flights desc, route_id""")
     for r in routes:
         r["carriers"] = [_clean_row({k: v for k, v in c.items() if k != "route_id"}, 3)
                          for c in by_carrier if c["route_id"] == r["id"]]
@@ -200,7 +200,9 @@ def export(con, lineage: dict, ontology: dict) -> None:
                          p_value as p, baseline_center as base_center, baseline_scale as base_scale,
                          baseline_n as base_n, reference_value as ref, streak_weeks as streak,
                          origin_disrupted, wx_visibility_min_mi as wx_vis, wx_gust_max_mph as wx_gust,
-                         wx_precip_total_in as wx_precip
+                         wx_precip_total_in as wx_precip, base_route as b_route, base_route_month as b_month,
+                         base_origin as b_origin, base_all as b_all, eligible_route as elig_r,
+                         fired_route as fired_r, eligible_all as elig, fired_all as fired
                   from ontology__route_alert order by alert_date, alert_id""")
     evidence = {}
     for f in q("""select a.alert_id, f.flight_name, f.airline_id, f.tail_number, f.sched_dep_hhmm, f.status,
@@ -227,10 +229,25 @@ def export(con, lineage: dict, ontology: dict) -> None:
     # ---- aircraft ---------------------------------------------------------
     aircraft = q("""select aircraft_id as id, airline_id as airline, manufacturer as maker, model, year_built as year,
                            seats, engines, flights, routes, mean_arr_delay as mean_arr, miles_flown as miles
-                    from ontology__aircraft order by flights desc""")
+                    from ontology__aircraft order by flights desc, aircraft_id""")
     # 3,322 rows: ship as arrays, with the column names as the first record.
     cols = list(aircraft[0].keys())
     _write_lines(APP_DATA / "aircraft.json", [cols] + [[_clean(a[c], 1) for c in cols] for a in aircraft])
+
+    # ---- baselines for live mode ------------------------------------------
+    def table(sql):
+        rows = q(sql)
+        cols = list(rows[0].keys())
+        return {"cols": cols, "rows": [[_clean(r[c], 4) for c in cols] for r in rows]}
+    baselines = {
+        "origin_month_hour": table("""select origin, month, sched_dep_hour as hour, flights, mean_dep_delay as mean_dep,
+                                             dep_late / nullif(departed, 0) as late_share, cancel_rate
+                                      from metrics__origin_month_hour order by 1, 2, 3"""),
+        "route_month": table("""select route_id as route, month, flights, on_time_share as on_time,
+                                       mean_arr_delay as mean_arr, cancel_rate
+                                from metrics__route_monthly order by 1, 2"""),
+    }
+    (APP_DATA / "baselines.json").write_text(json.dumps(baselines, separators=(",", ":")))
 
     # ---- core: everything small ------------------------------------------
     k = q("""select count(*) as flights, count(*) filter (status = 'cancelled') as cancelled,
@@ -291,6 +308,6 @@ def export(con, lineage: dict, ontology: dict) -> None:
     }
     (APP_DATA / "core.json").write_text(json.dumps(core, separators=(",", ":"), ensure_ascii=False))
 
-    sizes = {p.name: p.stat().st_size for p in sorted(APP_DATA.glob("*.json"))}
+    sizes = {p.name: p.stat().st_size for p in sorted(APP_DATA.glob("*.json")) if not p.name.startswith("live")}
     print("\napp/data:", ", ".join(f"{n} {s / 1024:.0f} KB" for n, s in sizes.items()),
           f"(total {sum(sizes.values()) / 1e6:.2f} MB)")
