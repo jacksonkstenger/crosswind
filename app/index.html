@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crosswind</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout idea: a strip bay. Alerts sit in a rack like air-traffic flight strips;
+     everything around them is quiet chart paper with one aeronautical-magenta accent. */
+  --paper:#eef1ec; --surface:#fafbf8; --ink:#16222c; --ink-2:#4b5963; --ink-3:#77838b;
+  --line:#d6dcd5; --line-2:#bcc5be; --accent:#a3246b; --accent-ink:#ffffff; --accent-wash:rgba(163,36,107,.10);
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --s8:#e34948;
+  --quiet:#c5cfd6;
+  --seq-1:#cde2fb; --seq-2:#9ec5f4; --seq-3:#6da7ec; --seq-4:#3987e5; --seq-5:#256abf; --seq-6:#184f95; --seq-7:#0d366b;
+  --div-mid:#e6e8e3; --div-pos-1:#9ec5f4; --div-pos-2:#3987e5; --div-pos-3:#104281;
+  --div-neg-1:#f2aaa9; --div-neg-2:#e34948; --div-neg-3:#9a2323;
+  --font:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --r:6px; --nav:64px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0c1218; --surface:#141c24; --ink:#e7ecef; --ink-2:#b3bec6; --ink-3:#808c95;
+    --line:#25303a; --line-2:#3a4752; --accent:#ee7db8; --accent-ink:#1c0a13; --accent-wash:rgba(238,125,184,.14);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#0ca30c; --s7:#9085e9; --s8:#e66767;
+    --quiet:#3a4753;
+    --seq-1:#0d366b; --seq-2:#184f95; --seq-3:#256abf; --seq-4:#3987e5; --seq-5:#6da7ec; --seq-6:#9ec5f4; --seq-7:#cde2fb;
+    --div-mid:#333d46; --div-pos-1:#256abf; --div-pos-2:#3987e5; --div-pos-3:#9ec5f4;
+    --div-neg-1:#a23a3a; --div-neg-2:#e66767; --div-neg-3:#f4b0b0;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0c1218; --surface:#141c24; --ink:#e7ecef; --ink-2:#b3bec6; --ink-3:#808c95;
+  --line:#25303a; --line-2:#3a4752; --accent:#ee7db8; --accent-ink:#1c0a13; --accent-wash:rgba(238,125,184,.14);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#0ca30c; --s7:#9085e9; --s8:#e66767;
+  --quiet:#3a4753;
+  --seq-1:#0d366b; --seq-2:#184f95; --seq-3:#256abf; --seq-4:#3987e5; --seq-5:#6da7ec; --seq-6:#9ec5f4; --seq-7:#cde2fb;
+  --div-mid:#333d46; --div-pos-1:#256abf; --div-pos-2:#3987e5; --div-pos-3:#9ec5f4;
+  --div-neg-1:#a23a3a; --div-neg-2:#e66767; --div-neg-3:#f4b0b0;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font:15px/1.45 var(--font);-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{margin:0;text-wrap:balance;font-stretch:78%;letter-spacing:.005em}
+h1{font-size:24px;font-weight:750;line-height:1.1}
+h2{font-size:18px;font-weight:700;line-height:1.2}
+h3{font-size:13px;font-weight:650;color:var(--ink-2)}
+p{margin:0}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-3)}
+.code{font-stretch:70%;font-weight:700;letter-spacing:.02em}
+.boot{padding:24px 16px;color:var(--ink-2)}
+
+/* ---- shell ---- */
+#app{height:100%;display:grid;grid-template-columns:1fr;grid-template-rows:1fr auto}
+#main{overflow:auto;min-width:0;grid-row:1}
+#nav{grid-row:2;display:flex;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0)}
+#nav button{flex:1;min-width:0;border:0;background:none;padding:7px 2px 6px;display:grid;justify-items:center;gap:2px;
+  font-size:11px;font-weight:600;color:var(--ink-3);font-stretch:85%}
+#nav button svg{width:22px;height:22px}
+#nav button[aria-current="page"]{color:var(--accent)}
+#nav .brand{display:none}
+#drawer{position:fixed;inset:0;z-index:20;background:var(--paper);overflow:auto;overscroll-behavior:contain}
+.view{padding:16px 16px 28px;display:grid;gap:18px;max-width:1180px}
+.view-head{display:grid;gap:4px}
+.lede{color:var(--ink-2);max-width:66ch}
+@media (min-width:900px){
+  #app{grid-template-columns:var(--nav) minmax(0,1fr) auto;grid-template-rows:1fr}
+  #nav{grid-row:1;grid-column:1;flex-direction:column;border-top:0;border-right:1px solid var(--line);padding:10px 0;gap:4px}
+  #nav button{flex:none;padding:9px 2px}
+  #nav .brand{display:grid;place-items:center;height:40px;margin-bottom:8px;color:var(--accent)}
+  #nav .brand svg{width:28px;height:28px}
+  #main{grid-row:1;grid-column:2}
+  #drawer{position:static;grid-column:3;width:min(480px,42vw);border-left:1px solid var(--line);background:var(--surface)}
+  .view{padding:24px 28px 40px}
+  .view>.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+
+/* ---- controls ---- */
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:6px 11px;font-size:13px;font-weight:600;color:var(--ink-2);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.chip{border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-wash);color:var(--ink)}
+.chip .n{color:var(--ink-3);font-weight:500;margin-left:4px}
+.btn{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r);padding:7px 12px;font-weight:650;font-size:14px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.5;cursor:default}
+.field{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r);padding:7px 10px;min-width:0;width:100%}
+label.lab{display:grid;gap:3px;font-size:12px;font-weight:600;color:var(--ink-2)}
+.linkish{border:0;background:none;padding:0;color:var(--accent);font-weight:650;text-align:left;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
+
+/* ---- status + severity ---- */
+.pill{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line-2);border-radius:999px;padding:1px 8px;font-size:12px;font-weight:650;white-space:nowrap;color:var(--ink-2)}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ink-3)}
+.pill[data-s="open"]::before{background:var(--accent)}
+.pill[data-s="acknowledged"]::before,.pill[data-s="investigating"]::before{background:var(--s1)}
+.pill[data-s="resolved"]::before{background:var(--good)}
+.pill[data-s="dismissed"]::before{background:none;border:1.5px solid var(--ink-3)}
+.sev{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700}
+.sev svg{width:14px;height:14px;flex:none}
+.sev[data-v="critical"] svg{color:var(--critical)} .sev[data-v="high"] svg{color:var(--serious)} .sev[data-v="medium"] svg{color:var(--warning)}
+
+/* ---- the strip bay ---- */
+.bay{display:grid;gap:5px}
+.strip{display:grid;grid-template-columns:8px minmax(0,1fr) auto;border:1px solid var(--line);background:var(--surface);border-radius:3px;
+  text-align:left;padding:0;width:100%;color:inherit;overflow:hidden}
+.strip:hover{border-color:var(--line-2)}
+.strip[aria-current="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.strip .holder{background:var(--warning)}
+.strip[data-v="high"] .holder{background:var(--serious)} .strip[data-v="critical"] .holder{background:var(--critical)}
+.strip .cells{display:grid;grid-template-columns:minmax(0,1fr);gap:1px 12px;padding:7px 10px}
+.strip .route{font-size:21px;line-height:1.05;font-stretch:66%;font-weight:750;letter-spacing:.01em;white-space:nowrap}
+.strip .route .arr{color:var(--ink-3);font-weight:500;padding:0 3px}
+.strip .what{font-size:13px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:2px 10px;align-items:center}
+.strip .stat{border-left:1px solid var(--line);padding:7px 10px;display:grid;align-content:center;justify-items:end;gap:1px;min-width:92px}
+.strip .stat b{font-size:17px;font-stretch:75%;font-weight:750;line-height:1.1}
+.strip .stat span{font-size:11px;color:var(--ink-3);text-align:right}
+.strip.closed{opacity:.62}
+@media (min-width:620px){
+  .strip .cells{grid-template-columns:150px minmax(0,1fr);align-items:center}
+}
+
+/* ---- tables ---- */
+.scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 10px 6px 0;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:baseline}
+th{font-size:12px;font-weight:650;color:var(--ink-2);position:sticky;top:0;background:var(--paper)}
+#drawer th{background:var(--paper)}
+th.r,td.r{text-align:right;font-variant-numeric:tabular-nums;padding-right:14px}
+th button{border:0;background:none;padding:0;font:inherit;color:inherit}
+th button[aria-sort]::after{content:" ↓";color:var(--accent)}
+th button[aria-sort="ascending"]::after{content:" ↑"}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover td{background:var(--accent-wash)}
+td.wrap{white-space:normal;min-width:160px}
+
+/* ---- figures ---- */
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.tile{background:var(--surface);padding:10px 12px;display:grid;gap:1px}
+.tile b{font-size:24px;font-weight:700;font-stretch:80%;line-height:1.15}
+.tile span{font-size:12px;color:var(--ink-2)}
+.tile small{font-size:11px;color:var(--ink-3)}
+.fig{display:grid;gap:8px;min-width:0}
+.fig-head{display:flex;gap:10px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}
+.fig-head p{font-size:12px;color:var(--ink-3)}
+.fig figcaption,.cap{font-size:12px;color:var(--ink-3);max-width:70ch}
+figure{margin:0}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--ink-2)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.legend i.box{height:10px;width:10px;border-radius:2px}
+.hbars{display:grid;grid-template-columns:auto minmax(60px,1fr) auto;gap:5px 8px;align-items:center;font-size:13px}
+.hbars .track{height:14px;position:relative}
+.hbars .bar{position:absolute;inset:0 auto 0 0;background:var(--s1);border-radius:0 4px 4px 0;min-width:2px}
+.hbars .lbl{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:42vw}
+.hbars .val{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.grid2{display:grid;gap:22px 28px;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr))}
+svg text{font-family:var(--font);fill:var(--ink-3);font-size:11px}
+svg .axis{stroke:var(--line-2)} svg .gridl{stroke:var(--line)}
+.sect{display:grid;gap:10px;padding-top:14px;border-top:1px solid var(--line)}
+
+/* ---- drawer ---- */
+.d-head{position:sticky;top:0;z-index:2;background:inherit;display:flex;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line)}
+.d-head .kind{font-size:12px;font-weight:650;color:var(--ink-3);margin-right:auto}
+.d-body{padding:14px 16px 32px;display:grid;gap:16px}
+.icon-btn{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r);width:34px;height:34px;display:grid;place-items:center;padding:0}
+.icon-btn svg{width:18px;height:18px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;font-size:13px}
+.kv dt{color:var(--ink-2)} .kv dd{margin:0;font-variant-numeric:tabular-nums;text-align:right}
+.why{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:grid;gap:8px;font-size:13px}
+#drawer .why{background:var(--paper)}
+.eq{font-size:14px;font-variant-numeric:tabular-nums;overflow-x:auto;white-space:nowrap;padding:2px 0}
+.eq i{font-style:italic;font-family:Georgia,"Times New Roman",serif}
+.log{display:grid;gap:6px;font-size:12px;color:var(--ink-2);list-style:none;margin:0;padding:0}
+.note{font-size:12px;color:var(--ink-3)}
+.banner{border:1px solid var(--line-2);border-left:4px solid var(--warning);border-radius:3px;padding:8px 10px;font-size:13px;background:var(--surface)}
+
+/* ---- map, lineage ---- */
+.mapwrap{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden;position:relative;touch-action:pan-y}
+.mapwrap svg{display:block;width:100%;height:auto}
+.lin-wrap{border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.lin-wrap svg{display:block}
+.node rect{fill:var(--surface);stroke:var(--line-2)}
+.node text{fill:var(--ink);font-size:11.5px;font-weight:600}
+.node{cursor:pointer}
+.node.sel rect{stroke:var(--accent);stroke-width:2}
+.node.dim{opacity:.28}
+.edge{fill:none;stroke:var(--line-2);stroke-width:1}
+.edge.on{stroke:var(--accent);stroke-width:1.6}
+.edge.dim{opacity:.18}
+
+/* ---- tooltip ---- */
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--paper);border-radius:4px;padding:6px 9px;font-size:12px;max-width:260px;line-height:1.35}
+#tip b{font-size:13px}
+
+/* ---- ask ---- */
+.chat{display:grid;gap:12px;max-width:760px}
+.msg{display:grid;gap:6px}
+.msg.q{justify-self:end;background:var(--accent-wash);border-radius:10px 10px 2px 10px;padding:8px 12px;max-width:88%}
+.msg.a{border-left:3px solid var(--line-2);padding-left:12px}
+.msg.a p{margin:0 0 6px} .msg.a ul{margin:0 0 6px;padding-left:18px}
+.steps{font-size:12px;color:var(--ink-3);display:grid;gap:2px}
+details.q summary{cursor:pointer;font-size:12px;color:var(--ink-2)}
+details.q pre{font-size:11px;overflow:auto;background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:8px;margin:6px 0 0;max-height:220px}
+@media (prefers-reduced-motion:no-preference){
+  #drawer:not([hidden]){animation:slide .16s ease-out}
+  @keyframes slide{from{transform:translateX(18px);opacity:.4}to{transform:none;opacity:1}}
+}
+
+</style>
+</head>
+<body>
+<div id="app">
+  <nav id="nav" aria-label="Views"></nav>
+  <main id="main" tabindex="-1"><p class="boot">Loading flight data…</p></main>
+  <aside id="drawer" aria-label="Details" hidden></aside>
+</div>
+<div id="tip" role="status" aria-live="polite" hidden></div>
+<script>
+'use strict';
+// ---------- DOM helpers ----------
+const $ = (sel, root = document) => root.querySelector(sel);
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function build(el, attrs, kids) {
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'text') el.textContent = v;
+    else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const kid of kids.flat(Infinity)) {
+    if (kid != null && kid !== false) el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  }
+  return el;
+}
+const h = (tag, attrs, ...kids) => build(document.createElement(tag), attrs, kids);
+const s = (tag, attrs, ...kids) => build(document.createElementNS(SVG_NS, tag), attrs, kids);
+const put = (el, ...kids) => build(el, null, kids);   // append, skipping null / false
+
+// ---------- formatting ----------
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY0 = Date.UTC(2013, 0, 1);
+const dayIdx = iso => Math.round((Date.parse(iso + 'T00:00:00Z') - DAY0) / 864e5);
+const idxDate = i => new Date(DAY0 + i * 864e5).toISOString().slice(0, 10);
+const SUP = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+const F = {
+  int: n => n == null ? '–' : Math.round(n).toLocaleString('en-US'),
+  pct: (v, d = 0) => v == null ? '–' : (v * 100).toFixed(d) + '%',
+  num: (v, d = 1) => v == null ? '–' : Number(v).toFixed(d),
+  min: v => v == null ? '–' : `${Math.round(v)} min`,
+  smin: v => { if (v == null) return '–'; const r = Math.round(v); return (r > 0 ? '+' : r < 0 ? '−' : '') + Math.abs(r) + ' min'; },
+  date: iso => { const d = new Date(iso + 'T00:00:00Z'); return `${DOW[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`; },
+  hhmm: v => v == null ? '–' : String(Math.floor(v / 100)).padStart(2, '0') + ':' + String(v % 100).padStart(2, '0'),
+  p: v => { if (v == null) return '–'; if (v >= 0.001) return v.toFixed(3);
+    const [m, e] = v.toExponential(1).split('e'); return `${m} × 10${[...String(+e)].map(c => SUP[c]).join('')}`; },
+};
+
+// ---------- colour ----------
+const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+function ramp(stops) {
+  const cols = stops.map(rgb);
+  return t => {
+    const x = Math.max(0, Math.min(1, t)) * (cols.length - 1), i = Math.min(cols.length - 2, Math.floor(x)), f = x - i;
+    return `rgb(${cols[i].map((c, k) => Math.round(c + (cols[i + 1][k] - c) * f)).join(',')})`;
+  };
+}
+let PAL = {};
+function readPalette() {
+  const seq = ramp([1, 2, 3, 4, 5, 6, 7].map(i => cssVar('--seq-' + i)));
+  const pos = ramp([cssVar('--div-mid'), cssVar('--div-pos-1'), cssVar('--div-pos-2'), cssVar('--div-pos-3')]);
+  const neg = ramp([cssVar('--div-mid'), cssVar('--div-neg-1'), cssVar('--div-neg-2'), cssVar('--div-neg-3')]);
+  PAL = { seq, div: t => (t >= 0 ? pos(t) : neg(-t)), series: [1, 2, 3, 4, 5, 6, 7, 8].map(i => cssVar('--s' + i)),
+    quiet: cssVar('--quiet'), surface: cssVar('--surface'), accent: cssVar('--accent') };
+}
+
+// ---------- icons ----------
+const ICONS = {
+  inbox: 'M4 6h16M4 12h16M4 18h10', map: 'M12 3l2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6z',
+  explore: 'M5 5h6v6H5zM13 5h6v6h-6zM5 13h6v6H5zM13 13h6v6h-6z', delays: 'M12 4a8 8 0 100 16 8 8 0 000-16zM12 8v4.5l3 1.8',
+  pipeline: 'M3 6h5v4H3zM16 4h5v4h-5zM16 15h5v4h-5zM8 8h4V6h4M12 8v9h4', ask: 'M4 5h16v11H10l-5 4v-4H4z',
+  back: 'M15 5l-7 7 7 7', close: 'M6 6l12 12M18 6L6 18',
+  brand: 'M3 14c4-6 7-6 9 0s5 6 9 0M3 8c4-5 7-5 9 0s5 5 9 0',
+};
+const icon = name => s('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8,
+  'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' }, s('path', { d: ICONS[name] }));
+const SEV_SHAPE = { critical: 'M8 2h8l6 6v8l-6 6H8l-6-6V8z', high: 'M12 3l10 18H2z', medium: 'M12 2l10 10-10 10L2 12z' };
+const SEV_LABEL = { critical: 'Critical', high: 'High', medium: 'Medium' };
+const sevMark = v => h('span', { class: 'sev', 'data-v': v },
+  s('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true' }, s('path', { d: SEV_SHAPE[v], fill: 'currentColor' })), SEV_LABEL[v]);
+const STATUS_LABEL = { open: 'Open', acknowledged: 'Acknowledged', investigating: 'Investigating', resolved: 'Resolved', dismissed: 'Dismissed' };
+const statusPill = st => h('span', { class: 'pill', 'data-s': st, text: STATUS_LABEL[st] || st });
+const TYPE_LABEL = { delay_spike: 'Delay spike', cancellation_cluster: 'Cancellation cluster', chronic_lateness: 'Chronically late week' };
+
+// ---------- tooltip ----------
+const Tip = {
+  el: null,
+  show(evt, content) {
+    const el = this.el || (this.el = $('#tip'));
+    el.replaceChildren(...[content].flat());
+    el.hidden = false;
+    const r = el.getBoundingClientRect(), pad = 12;
+    let x = evt.clientX + pad, y = evt.clientY + pad;
+    if (x + r.width > innerWidth - 6) x = Math.max(6, evt.clientX - r.width - pad);
+    if (y + r.height > innerHeight - 6) y = Math.max(6, evt.clientY - r.height - pad);
+    el.style.left = x + 'px'; el.style.top = y + 'px';
+  },
+  hide() { if (Tip.el) Tip.el.hidden = true; },
+};
+function tipOn(el, make) {
+  const show = e => Tip.show(e.clientX == null ? { clientX: el.getBoundingClientRect().left, clientY: el.getBoundingClientRect().bottom } : e, make());
+  el.addEventListener('pointermove', show); el.addEventListener('pointerdown', show);
+  el.addEventListener('pointerleave', Tip.hide); el.addEventListener('focus', show); el.addEventListener('blur', Tip.hide);
+  return el;
+}
+const tipRows = (title, rows) => [h('b', { text: title }), ...rows.map(([k, v]) => h('div', null, h('b', { text: v }), ' ', k))];
+
+// ---------- data ----------
+const D = { byId: {} };
+const getJSON = name => fetch(`data/${name}.json`).then(r => { if (!r.ok) throw new Error(`${name}.json: HTTP ${r.status}`); return r.json(); });
+const pending = {};
+const need = name => (pending[name] ??= getJSON(name).then(v => {
+  if (name === 'aircraft') {
+    const cols = v[0];
+    v = v.slice(1).map(row => Object.fromEntries(cols.map((c, i) => [c, row[i]])));
+    D.byId.aircraft = new Map(v.map(a => [a.id, a]));
+  }
+  if (name === 'route_daily') D.byId.daily = new Map(v.map(r => [r.id, r]));
+  return (D[name] = v);
+}));
+const index = (rows, key = 'id') => new Map(rows.map(r => [r[key], r]));
+
+// ---------- state + routing ----------
+const VIEWS = [['inbox', 'Alerts'], ['map', 'Map'], ['explore', 'Objects'], ['delays', 'Delays'], ['pipeline', 'Pipeline'], ['ask', 'Ask']];
+const VIEW = {};      // name -> { render(root) }
+const DETAIL = {};    // object type -> { kind, get(id), render(obj), title(obj) }
+const S = { view: 'inbox', stack: [], selfHash: null, width: innerWidth, askReady: false };
+const HASHABLE = ['alert', 'route', 'airline', 'airport', 'aircraft', 'day'];
+
+function hashFor(top) {
+  if (!top || !HASHABLE.includes(top.type)) return S.view;
+  return `${top.type}-${top.type === 'day' ? top.id.replace('_', '-') : top.id}`;
+}
+function syncHash() {
+  const want = hashFor(S.stack.at(-1));
+  if (location.hash.slice(1) !== want) { S.selfHash = want; location.hash = want; }
+}
+function applyHash(initial) {
+  const x = location.hash.slice(1), m = /^([a-z]+)-(.+)$/.exec(x);
+  if (m && HASHABLE.includes(m[1])) {
+    if (initial) S.view = m[1] === 'alert' ? 'inbox' : 'explore';
+    S.stack = [{ type: m[1], id: m[1] === 'day' ? m[2].replace('-', '_') : m[2] }];
+  } else {
+    S.view = VIEWS.some(v => v[0] === x) && (x !== 'ask' || S.askReady) ? x : (initial ? 'inbox' : S.view);
+    S.stack = [];
+  }
+  renderAll();
+}
+function setView(v) { S.view = v; S.stack = []; syncHash(); renderAll(); $('#main').scrollTop = 0; }
+function openObj(type, id, fresh) {
+  const top = S.stack.at(-1);
+  if (top && top.type === type && top.id === id) return;
+  if (fresh) S.stack = [];
+  S.stack.push({ type, id }); syncHash(); renderDrawer(); VIEW[S.view].onSelect?.();
+}
+function popObj() { S.stack.pop(); syncHash(); renderDrawer(); VIEW[S.view].onSelect?.(); }
+function closeDrawer() { S.stack = []; syncHash(); renderDrawer(); VIEW[S.view].onSelect?.(); }
+const selected = type => { const t = S.stack.at(-1); return t && t.type === type ? t.id : null; };
+const link = (type, id, label) => h('button', { class: 'linkish', type: 'button', onclick: e => { e.stopPropagation(); openObj(type, id); } }, label ?? id);
+
+function renderNav() {
+  $('#nav').replaceChildren(h('span', { class: 'brand', title: 'Crosswind' }, icon('brand')),
+    ...VIEWS.filter(([id]) => id !== 'ask' || S.askReady).map(([id, label]) =>
+      h('button', { type: 'button', 'aria-current': S.view === id ? 'page' : null, onclick: () => setView(id) },
+        icon(id === 'explore' ? 'explore' : id), label)));
+}
+function renderDrawer() {
+  const el = $('#drawer'), top = S.stack.at(-1);
+  Tip.hide();
+  if (!top) { el.hidden = true; el.replaceChildren(); return; }
+  const def = DETAIL[top.type], body = h('div', { class: 'd-body' }, h('p', { class: 'muted', text: 'Loading…' }));
+  el.hidden = false;
+  el.replaceChildren(h('div', { class: 'd-head' },
+    S.stack.length > 1 && h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Back', onclick: popObj }, icon('back')),
+    h('span', { class: 'kind', text: def.kind }),
+    h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Close details', onclick: closeDrawer }, icon('close'))), body);
+  el.scrollTop = 0;
+  Promise.resolve(def.get(top.id)).then(obj => {
+    if (S.stack.at(-1) !== top) return;
+    body.replaceChildren(); put(body, obj ? def.render(obj) : h('p', { text: `Nothing found for ${top.id}.` }));
+  }).catch(err => body.replaceChildren(h('p', { text: `Could not load this: ${err.message}` })));
+}
+function renderAll() {
+  readPalette(); renderNav();
+  const main = $('#main'), root = h('div', { class: 'view' });
+  VIEW[S.view].render(root);
+  main.replaceChildren(root);
+  renderDrawer();
+}
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const viewHead = (title, lede) => h('header', { class: 'view-head' }, h('h1', { text: title }), lede && h('p', { class: 'lede', text: lede }));
+const seg = (options, value, onPick, label) => h('div', { class: 'seg', role: 'group', 'aria-label': label },
+  options.map(([v, text]) => h('button', { type: 'button', 'aria-pressed': String(v === value), onclick: () => onPick(v) }, text)));
+
+// ---------- chart primitives (SVG, sized to the container at render time) ----------
+function niceTicks(lo, hi, n = 4) {
+  if (hi <= lo) hi = lo + 1;
+  const raw = (hi - lo) / n, mag = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(st => st >= raw);
+  const out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+const chartWidth = root => Math.max(260, Math.min(1120, (root?.clientWidth || $('#main').clientWidth - 32)));
+
+// Columns from a zero baseline. items: [{ label, value, color?, tip?: [title, rows], pick? }]
+function colChart({ width, height = 150, items, yFmt = F.int, xEvery = 1, ref, yMax, barMax = 24 }) {
+  const m = { l: 38, r: 8, t: items.some(d => d.mark) ? 20 : 10, b: 20 }, w = width - m.l - m.r, hh = height - m.t - m.b;
+  const vals = items.map(d => d.value ?? 0);
+  const lo = Math.min(0, ...vals), hi = Math.max(yMax ?? 0, ref?.value ?? 0, ...vals, 1e-9);
+  const ticks = niceTicks(lo, hi, 3), y0 = Math.min(lo, ticks[0]), y1 = Math.max(hi, ticks.at(-1));
+  const y = v => m.t + hh - (v - y0) / (y1 - y0) * hh, band = w / items.length, bw = Math.max(1.5, Math.min(barMax, band - 2));
+  const svg = s('svg', { viewBox: `0 0 ${width} ${height}`, width, height, role: 'img' });
+  for (const t of ticks) {
+    svg.append(s('line', { class: t === 0 ? 'axis' : 'gridl', x1: m.l, x2: width - m.r, y1: y(t), y2: y(t) }),
+      s('text', { x: m.l - 6, y: y(t) + 4, 'text-anchor': 'end' }, yFmt(t)));
+  }
+  if (ref) svg.append(s('line', { class: 'axis', x1: m.l, x2: width - m.r, y1: y(ref.value), y2: y(ref.value) }),
+    s('text', { x: width - m.r, y: y(ref.value) - 4, 'text-anchor': 'end' }, ref.label));
+  items.forEach((d, i) => {
+    const cx = m.l + band * (i + 0.5), g = s('g');
+    if (d.value != null) {
+      const top = y(Math.max(0, d.value)), bot = y(Math.min(0, d.value)), r = Math.min(4, bw / 2, (bot - top));
+      const x0 = cx - bw / 2, x1 = cx + bw / 2;
+      const path = d.value >= 0
+        ? `M${x0} ${bot}V${top + r}Q${x0} ${top} ${x0 + r} ${top}H${x1 - r}Q${x1} ${top} ${x1} ${top + r}V${bot}Z`
+        : `M${x0} ${top}V${bot - r}Q${x0} ${bot} ${x0 + r} ${bot}H${x1 - r}Q${x1} ${bot} ${x1} ${bot - r}V${top}Z`;
+      g.append(s('path', { d: path, fill: d.color || PAL.series[0] }));
+      if (d.mark) g.append(s('text', { x: cx, y: top - 5, 'text-anchor': 'middle', style: 'fill:var(--ink);font-weight:650' }, d.mark));
+    }
+    if (i % xEvery === 0 && d.label != null) {
+      const edge = cx > width - 26;
+      g.append(s('text', { x: edge ? width - 2 : cx, y: height - 5, 'text-anchor': edge ? 'end' : 'middle' }, d.label));
+    }
+    const hit = s('rect', { x: cx - band / 2, y: m.t, width: band, height: hh, fill: 'transparent', tabindex: d.tip ? 0 : null });
+    if (d.tip) tipOn(hit, () => tipRows(d.tip[0], d.tip[1]));
+    if (d.pick) { hit.style.cursor = 'pointer'; hit.addEventListener('click', d.pick); }
+    g.append(hit); svg.append(g);
+  });
+  return svg;
+}
+
+// Lines sharing one axis. series: [{ name, color, pts: [[x, y], ...] }]
+function lineChart({ width, height = 190, series, xTicks, xFmt = String, yFmt = F.int, tipTitle = String }) {
+  const m = { l: 38, r: 48, t: 10, b: 22 }, w = width - m.l - m.r, hh = height - m.t - m.b;
+  const xs = [...new Set(series.flatMap(sr => sr.pts.map(p => p[0])))].sort((a, b) => a - b);
+  const ys = series.flatMap(sr => sr.pts.map(p => p[1]));
+  const ticks = niceTicks(Math.min(0, ...ys), Math.max(...ys), 4), y0 = ticks[0], y1 = Math.max(ticks.at(-1), ...ys);
+  const x = v => m.l + (v - xs[0]) / (xs.at(-1) - xs[0] || 1) * w, y = v => m.t + hh - (v - y0) / (y1 - y0) * hh;
+  const svg = s('svg', { viewBox: `0 0 ${width} ${height}`, width, height, role: 'img' });
+  for (const t of ticks) svg.append(s('line', { class: t === 0 ? 'axis' : 'gridl', x1: m.l, x2: m.l + w, y1: y(t), y2: y(t) }),
+    s('text', { x: m.l - 6, y: y(t) + 4, 'text-anchor': 'end' }, yFmt(t)));
+  for (const t of xTicks || xs) svg.append(s('text', { x: x(t), y: height - 5, 'text-anchor': 'middle' }, xFmt(t)));
+  const ends = series.map(sr => ({ sr, yy: y(sr.pts.at(-1)[1]) })).sort((a, b) => a.yy - b.yy);
+  for (let i = 1; i < ends.length; i++) if (ends[i].yy - ends[i - 1].yy < 12) ends[i].yy = ends[i - 1].yy + 12;
+  for (const sr of series) {
+    svg.append(s('path', { d: 'M' + sr.pts.map(p => `${x(p[0]).toFixed(1)} ${y(p[1]).toFixed(1)}`).join('L'), fill: 'none',
+      stroke: sr.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+    const e = sr.pts.at(-1), lab = ends.find(d => d.sr === sr);
+    svg.append(s('circle', { cx: x(e[0]), cy: y(e[1]), r: 4, fill: sr.color, stroke: PAL.surface, 'stroke-width': 2 }),
+      s('text', { x: x(e[0]) + 8, y: lab.yy + 4, style: 'fill:var(--ink-2);font-weight:600' }, sr.name));
+  }
+  const cross = s('line', { class: 'axis', y1: m.t, y2: m.t + hh, visibility: 'hidden' });
+  const hit = s('rect', { x: m.l, y: m.t, width: w, height: hh, fill: 'transparent' });
+  const move = e => {
+    const box = svg.getBoundingClientRect(), px = (e.clientX - box.left) * (width / box.width);
+    const xv = xs.reduce((a, b) => Math.abs(x(b) - px) < Math.abs(x(a) - px) ? b : a);
+    cross.setAttribute('x1', x(xv)); cross.setAttribute('x2', x(xv)); cross.setAttribute('visibility', 'visible');
+    Tip.show(e, [h('b', { text: tipTitle(xv) }), ...series.map(sr => {
+      const p = sr.pts.find(q => q[0] === xv);
+      return h('div', null, h('i', { style: { display: 'inline-block', width: '12px', height: '3px', background: sr.color, marginRight: '6px', verticalAlign: 'middle' } }),
+        h('b', { text: p ? yFmt(p[1]) : '–' }), ' ', sr.name);
+    })]);
+  };
+  hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move);
+  hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); Tip.hide(); });
+  svg.append(cross, hit);
+  return svg;
+}
+
+// Horizontal ranked bars with the value at the tip (HTML, so labels wrap and stay legible).
+function hbars(rows, { max, color } = {}) {
+  const top = max ?? Math.max(...rows.map(r => r.value), 1e-9);
+  return h('div', { class: 'hbars' }, rows.map(r => [
+    h('span', { class: 'lbl' }, r.link || r.label),
+    h('span', { class: 'track' }, h('span', { class: 'bar', style: { width: Math.max(0, r.value / top * 100) + '%', background: r.color || color || null } })),
+    h('span', { class: 'val', text: r.text })]));
+}
+
+// A year of days as week columns. days: [{ date, value, flag, tip: [title, rows], pick }]
+function calendarHeat({ width, days, color, cell }) {
+  const first = new Date(days[0].date + 'T00:00:00Z').getUTCDay(), cols = Math.ceil((days.length + first) / 7);
+  const c = cell || Math.max(4, Math.min(15, Math.floor((width - 24) / cols))), gap = c > 7 ? 2 : 1, top = 14;
+  const svg = s('svg', { viewBox: `0 0 ${24 + cols * c} ${top + 7 * c}`, width: 24 + cols * c, height: top + 7 * c, role: 'img' });
+  ['M', 'W', 'F'].forEach((d, i) => svg.append(s('text', { x: 0, y: top + (1 + i * 2) * c + c * 0.75, style: `font-size:${Math.min(10, c + 2)}px` }, d)));
+  let lastMonth = -1;
+  days.forEach((d, i) => {
+    const k = i + first, col = Math.floor(k / 7), row = k % 7, mo = +d.date.slice(5, 7) - 1;
+    if (mo !== lastMonth && +d.date.slice(8) <= 7) { lastMonth = mo; svg.append(s('text', { x: 24 + col * c, y: 10, style: 'font-size:10px' }, MONTHS[mo])); }
+    const r = s('rect', { x: 24 + col * c, y: top + row * c, width: c - gap, height: c - gap, rx: 1.5,
+      fill: d.value == null ? 'none' : color(d.value), tabindex: 0 });
+    if (d.flag) r.setAttribute('stroke', PAL.accent), r.setAttribute('stroke-width', 1.5);
+    tipOn(r, () => tipRows(d.tip[0], d.tip[1]));
+    if (d.pick) { r.style.cursor = 'pointer'; r.addEventListener('click', d.pick); }
+    svg.append(r);
+  });
+  return svg;
+}
+
+// ---------- tables ----------
+function simpleTable(cols, rows) {
+  return h('div', { class: 'scroll-x' }, h('table', null,
+    h('thead', null, h('tr', null, cols.map(c => h('th', { class: c.num ? 'r' : null, text: c.label })))),
+    h('tbody', null, rows.map(r => h('tr', null, cols.map(c => h('td', { class: (c.num ? 'r ' : '') + (c.wrap ? 'wrap' : '') },
+      c.render ? c.render(r) : (c.fmt ? c.fmt(r[c.key]) : (r[c.key] ?? '–')))))))));
+}
+// Sortable table. cols: [{ key, label, num, fmt, render, sortVal }]
+function dataTable({ cols, rows, sort, onRow, page = 60 }) {
+  const state = { key: sort?.key, dir: sort?.dir || 'desc', shown: page };
+  const wrap = h('div', { class: 'fig' });
+  const draw = () => {
+    const col = cols.find(c => c.key === state.key), val = col?.sortVal || (r => r[state.key]);
+    const sorted = col ? [...rows].sort((a, b) => {
+      const x = val(a), y = val(b);
+      if (x == null) return 1; if (y == null) return -1;
+      return (typeof x === 'string' ? x.localeCompare(y) : x - y) * (state.dir === 'asc' ? 1 : -1);
+    }) : rows;
+    wrap.replaceChildren(h('div', { class: 'scroll-x' }, h('table', null,
+      h('thead', null, h('tr', null, cols.map(c => h('th', { class: c.num ? 'r' : null },
+        h('button', { type: 'button', 'aria-sort': c.key === state.key ? (state.dir === 'asc' ? 'ascending' : 'descending') : null,
+          onclick: () => { state.dir = c.key === state.key ? (state.dir === 'asc' ? 'desc' : 'asc') : (c.num ? 'desc' : 'asc'); state.key = c.key; draw(); } }, c.label))))),
+      h('tbody', null, sorted.slice(0, state.shown).map(r => h('tr', { class: onRow ? 'click' : null, onclick: onRow ? () => onRow(r) : null },
+        cols.map(c => h('td', { class: c.num ? 'r' : null }, c.render ? c.render(r) : (c.fmt ? c.fmt(r[c.key]) : (r[c.key] ?? '–'))))))))),
+      sorted.length > state.shown && h('button', { class: 'btn', type: 'button', style: { justifySelf: 'start' },
+        onclick: () => { state.shown += page * 3; draw(); } }, `Show more (${F.int(sorted.length - state.shown)} left)`));
+  };
+  draw();
+  return wrap;
+}
+
+// A figure with a chart and its table twin behind one toggle.
+function figure({ title, sub, chart, table, caption, legend }) {
+  let mode = 'chart';
+  const body = h('div', { class: 'scroll-x' }), fig = h('figure', { class: 'fig' });
+  const toggle = h('button', { class: 'linkish', type: 'button', style: { fontSize: '12px' } });
+  const draw = () => {
+    toggle.textContent = mode === 'chart' ? 'Show table' : 'Show chart';
+    body.replaceChildren(mode === 'chart' ? chart(chartWidth(fig)) : simpleTable(table.cols, table.rows));
+  };
+  toggle.addEventListener('click', () => { mode = mode === 'chart' ? 'table' : 'chart'; draw(); });
+  put(fig, h('div', { class: 'fig-head' }, h('div', null, h('h2', { text: title }), sub && h('p', { text: sub })), table && toggle),
+    legend && h('div', { class: 'legend' }, legend.map(([name, color, box]) => h('span', null, h('i', { class: box ? 'box' : null, style: { background: color } }), name))),
+    body, caption && h('figcaption', { text: caption }));
+  queueMicrotask(draw);
+  return fig;
+}
+const tiles = items => h('div', { class: 'tiles' }, items.map(([value, label, small]) =>
+  h('div', { class: 'tile' }, h('b', { text: value }), h('span', { text: label }), small && h('small', { text: small }))));
+const kv = pairs => h('dl', { class: 'kv' }, pairs.filter(Boolean).map(([k, v]) => [h('dt', { text: k }), h('dd', null, v)]));
+
+// ---------- triage store: shared through the page's database when available, else this browser ----------
+const Triage = {
+  map: new Map(), mode: 'local', me: null, db: null, user: null, names: {}, queue: {}, onChange: null, stale: false,
+  get(id) { return this.map.get(id) || { status: 'open', assignee: '', history: [] }; },
+  emit() { VIEW.inbox.refresh?.(); this.onChange?.(); },
+  apply(id, patch, entry) {
+    if (this.mode === 'readonly') return;
+    const cur = this.get(id), now = new Date().toISOString();
+    const next = { status: cur.status, assignee: cur.assignee || '', ...patch, updated: now,
+      history: [...(cur.history || []), ...(entry ? [{ at: now, by: this.me || 'local', ...entry }] : [])].slice(-40) };
+    this.map.set(id, next); this.emit();
+    if (this.mode === 'shared') {
+      this.queue[id] = (this.queue[id] || Promise.resolve()).then(() => this.db.doc('triage/' + id).set(next)).catch(err => {
+        if (err && err.code === 'invalid_argument') this.mode = 'readonly';
+        this.error = 'That change was not saved. ' + (this.mode === 'readonly' ? 'You have view-only access.' : 'Try again in a moment.');
+        this.emit();
+      });
+    } else {
+      try { localStorage.setItem('crosswind.triage', JSON.stringify(Object.fromEntries(this.map))); } catch (e) { /* storage unavailable */ }
+    }
+  },
+  who(id) { return id === 'local' || (this.me && id === this.me) ? 'you' : (this.names[id] || 'a collaborator'); },
+  describe() {
+    return { shared: 'Triage is saved with this page and shared with everyone who can open it.',
+      readonly: 'You can read triage here. Changing it needs contributor access.',
+      local: 'Triage is saved in this browser only.' }[this.mode] + (this.stale ? ' Saved triage has not loaded yet, so this may be out of date.' : '');
+  },
+  init() {
+    try { for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem('crosswind.triage') || '{}'))) this.map.set(k, v); } catch (e) { /* none */ }
+    if (!window.claude || !window.claude.use) return;
+    Promise.all([window.claude.use('db'), window.claude.use('user')]).then(async ([db, user]) => {
+      if (!db) return;
+      this.db = db; this.user = user;
+      let canWrite = null;
+      try { this.me = user ? await user.id() : null; canWrite = user ? await user.can('data.write') : null; } catch (e) { /* not told */ }
+      this.mode = canWrite === false ? 'readonly' : 'shared';
+      const timer = setTimeout(() => { this.stale = true; this.emit(); }, 10000);
+      db.collection('triage').onSnapshot(snap => {
+        if (!snap.metadata.fromCache) { clearTimeout(timer); this.stale = false; }
+        this.map = new Map(snap.docs.map(d => [d.id, d.data()]));
+        const ids = [...new Set(snap.docs.flatMap(d => (d.data().history || []).map(e => e.by)))].filter(i => i && i !== 'local' && !this.names[i]);
+        if (ids.length && user && user.profiles) {
+          Promise.resolve(user.profiles(ids)).then(ps => { for (const i of ids) this.names[i] = (ps && ps[i] && ps[i].name) || 'a collaborator'; this.emit(); }).catch(() => {});
+        }
+        this.emit();
+      }, () => { clearTimeout(timer); this.mode = 'local'; this.emit(); });
+    }).catch(() => {});
+  },
+};
+
+// ---------- inbox ----------
+const IN = { status: 'open', sev: new Set(), type: new Set(), origin: new Set(), q: '', sort: 'date' };
+const STATUS_GROUP = { open: ['open'], active: ['acknowledged', 'investigating'], closed: ['resolved', 'dismissed'] };
+const SEV_RANK = { critical: 0, high: 1, medium: 2 };
+const alertWhen = a => a.type === 'chronic_lateness' ? `week of ${F.date(a.date)}` : F.date(a.date);
+function alertStat(a) {
+  if (a.type === 'delay_spike') return [`${Math.round(a.observed)} min`, 'mean departure delay'];
+  if (a.type === 'cancellation_cluster') return [`${Math.round(a.observed * a.n)} of ${a.n}`, 'flights cancelled'];
+  return [F.pct(a.observed), 'arrived 15+ min late'];
+}
+function toggleSet(set, v) { set.has(v) ? set.delete(v) : set.add(v); }
+
+VIEW.inbox = {
+  render(root) {
+    const controls = h('div', { class: 'fig' }), bay = h('div', { class: 'bay' }), count = h('p', { class: 'note' });
+    const search = h('input', { class: 'field', id: 'alert-search', type: 'search', placeholder: 'Filter by airport code or name', value: IN.q,
+      'aria-label': 'Filter alerts', style: { maxWidth: '280px' }, oninput: e => { IN.q = e.target.value.trim().toLowerCase(); drawList(); } });
+    const passes = (a, skip) => (skip === 'status' || IN.status === 'all' || STATUS_GROUP[IN.status].includes(Triage.get(a.id).status))
+      && (skip === 'sev' || !IN.sev.size || IN.sev.has(a.sev)) && (skip === 'type' || !IN.type.size || IN.type.has(a.type))
+      && (skip === 'origin' || !IN.origin.size || IN.origin.has(a.o))
+      && (!IN.q || `${a.o} ${a.d} ${D.byId.airport.get(a.d)?.name || ''} ${a.route}`.toLowerCase().includes(IN.q));
+    const chips = (set, key, options) => options.map(([v, label]) =>
+      h('button', { class: 'chip', type: 'button', 'aria-pressed': String(set.has(v)), onclick: () => { toggleSet(set, v); draw(); } },
+        label, h('span', { class: 'n', text: D.alerts.filter(a => passes(a, key) && a[key === 'origin' ? 'o' : key] === v).length })));
+    const drawControls = () => {
+      const n = g => D.alerts.filter(a => passes(a, 'status') && (g === 'all' || STATUS_GROUP[g].includes(Triage.get(a.id).status))).length;
+      controls.replaceChildren(
+        h('div', { class: 'row' },
+          seg([['open', `Open ${n('open')}`], ['active', `In progress ${n('active')}`], ['closed', `Closed ${n('closed')}`], ['all', `All ${n('all')}`]],
+            IN.status, v => { IN.status = v; draw(); }, 'Triage status'),
+          seg([['date', 'Newest'], ['sev', 'Most severe']], IN.sort, v => { IN.sort = v; draw(); }, 'Sort')),
+        h('div', { class: 'row' }, chips(IN.sev, 'sev', [['critical', 'Critical'], ['high', 'High'], ['medium', 'Medium']]),
+          chips(IN.type, 'type', Object.entries(TYPE_LABEL)), chips(IN.origin, 'origin', [['EWR', 'EWR'], ['JFK', 'JFK'], ['LGA', 'LGA']])),
+        search);
+    };
+    const drawList = () => {
+      const rows = D.alerts.filter(a => passes(a)).sort((a, b) =>
+        (IN.sort === 'sev' ? SEV_RANK[a.sev] - SEV_RANK[b.sev] : 0) || b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
+      count.textContent = `${rows.length} of ${D.alerts.length} alerts. ${Triage.describe()}`;
+      const sel = selected('alert');
+      bay.replaceChildren(...rows.map(a => {
+        const t = Triage.get(a.id), [big, small] = alertStat(a);
+        return h('button', { class: 'strip' + (STATUS_GROUP.closed.includes(t.status) ? ' closed' : ''), type: 'button', 'data-v': a.sev, 'data-id': a.id,
+          'aria-current': String(a.id === sel), onclick: () => openObj('alert', a.id, true) },
+          h('span', { class: 'holder' }),
+          h('span', { class: 'cells' },
+            h('span', { class: 'route' }, a.o, h('span', { class: 'arr', text: '→' }), a.d),
+            h('span', { class: 'what' }, sevMark(a.sev), h('span', { text: TYPE_LABEL[a.type] }), h('span', { class: 'muted', text: alertWhen(a) }),
+              t.status !== 'open' && statusPill(t.status), t.assignee && h('span', { class: 'muted', text: t.assignee }))),
+          h('span', { class: 'stat' }, h('b', { text: big }), h('span', { text: small })));
+      }));
+      if (!rows.length) bay.append(h('p', { class: 'muted', text: 'No alerts match these filters. Clear a filter to see more.' }));
+    };
+    const draw = () => { drawControls(); drawList(); };
+    this.refresh = draw;
+    this.onSelect = () => { const sel = selected('alert'); for (const el of bay.children) el.setAttribute?.('aria-current', String(el.dataset?.id === sel)); };
+    put(root, viewHead('Route alerts', `${D.alerts.length} findings from three detectors over ${F.int(D.core.meta.kpis.flights)} departures from Newark, Kennedy and LaGuardia in 2013.`),
+      controls, count, bay);
+    draw();
+  },
+};
+
+// ---------- alert detail ----------
+function whyBlock(a) {
+  const eq = (...parts) => h('div', { class: 'eq' }, parts);
+  const v = t => h('i', { text: t });
+  if (a.type === 'delay_spike') {
+    const x = a.observed - a.ref;
+    return h('div', { class: 'why' },
+      kv([[`Mean departure delay, ${a.n} departures`, F.min(a.observed)], [`Rest of ${a.o} that day`, F.min(a.ref)], ['Gap x', F.smin(x)],
+        [`Usual gap: median of the prior ${a.base_n} days`, F.smin(a.base_center)], ['Scale: max(1.4826 × MAD, 5)', F.num(a.base_scale) + ' min']]),
+      eq(v('z'), ' = (', v('x'), ' − median) / scale = (', F.num(x, 0), ' − ', a.base_center < 0 ? `(${F.num(a.base_center, 0)})` : F.num(a.base_center, 0), ') / ', F.num(a.base_scale), ' = ', h('b', { text: F.num(a.stat) })),
+      h('p', { class: 'note', text: 'Fires when z is at least 4, the gap is 30 min or more above its usual level, the route averages 30 min late or worse, and at least 60% of its departures left 15+ min late. Subtracting the rest of the airport removes airport-wide bad days; the median and MAD keep one extreme day from inflating the baseline.' }));
+  }
+  if (a.type === 'cancellation_cluster') {
+    const c = Math.round(a.observed * a.n);
+    return h('div', { class: 'why' },
+      kv([['Cancelled', `${c} of ${a.n} (${F.pct(a.observed)})`], [`Route's 56-day rate, (C + ½) / (N + 1), N = ${F.int(a.base_n)}`, F.pct(a.base_center, 1)],
+        [`Rest of ${a.o} that day`, F.pct(a.ref, 1)], ['Null rate p₀, the larger of the two', F.pct(a.expected, 1)]]),
+      eq('P[Bin(', a.n, ', ', v('p'), '₀) ≥ ', c, '] = ', h('b', { text: F.p(a.p) }), ', adjusted ', h('b', { text: F.p(a.stat) })),
+      h('p', { class: 'note', text: 'Fires when the Benjamini–Hochberg adjusted p-value is at most 0.05 and at least 2 flights were cancelled. The adjustment runs over every route-day with 3 or more scheduled flights, which holds the expected share of false alerts to 5%.' }));
+  }
+  const k = Math.round(a.observed * a.n);
+  return h('div', { class: 'why' },
+    kv([['Arrived 15+ min late', `${k} of ${a.n} (${F.pct(a.observed)})`], ['95% Wilson lower bound', F.pct(a.stat, 1)], ['Weeks in a row', a.streak]]),
+    eq('lower = (', v('p̂'), ' + ', v('z'), '²/2', v('n'), ' − ', v('z'), '√(', v('p̂'), '(1 − ', v('p̂'), ')/', v('n'), ' + ', v('z'), '²/4', v('n'), '²)) / (1 + ', v('z'), '²/', v('n'), '), ', v('z'), ' = 1.96'),
+    h('p', { class: 'note', text: 'Fires when the lower bound is above 50% with at least 15 arrivals in the week: more than half the flights were late, beyond what a small sample could explain.' }));
+}
+
+function alertChart(a) {
+  const daily = D.byId.daily?.get(a.route);
+  if (!daily) return null;
+  const i0 = dayIdx(a.date), hi = PAL.series[0];
+  if (a.type === 'chronic_lateness') {
+    const weeks = [];
+    for (let k = 0; 7 * k - 1 < 365; k++) {
+      let arr = 0, late = 0;
+      for (let i = Math.max(0, 7 * k - 1); i <= Math.min(364, 7 * k + 5); i++) { arr += daily.arr[i]; late += daily.late[i]; }
+      const start = idxDate(Math.max(0, 7 * k - 1)), on = 7 * k - 1 === i0;
+      weeks.push({ label: +start.slice(8) <= 7 ? MONTHS[+start.slice(5, 7) - 1] : null, value: arr ? late / arr : null, color: on ? hi : PAL.quiet,
+        mark: on ? F.pct(late / arr) : null, date: start, arr, late,
+        tip: [`Week of ${F.date(start)}`, [['of arrivals late', arr ? F.pct(late / arr) : '–'], ['arrivals', F.int(arr)]]] });
+    }
+    return figure({ title: 'Share of arrivals 15+ min late, by week', sub: `${a.o} → ${a.d}, 2013. The flagged week is highlighted.`,
+      chart: w => colChart({ width: w, items: weeks, yFmt: v => F.pct(v), ref: { value: 0.5, label: '50%' }, yMax: 1 }),
+      table: { cols: [{ key: 'date', label: 'Week starting', fmt: F.date }, { key: 'late', label: 'Late', num: true }, { key: 'arr', label: 'Arrivals', num: true },
+        { key: 'value', label: 'Share', num: true, fmt: v => F.pct(v) }], rows: weeks } });
+  }
+  const spike = a.type === 'delay_spike', items = [];
+  for (let i = Math.max(0, i0 - 28); i <= Math.min(364, i0 + 7); i++) {
+    const date = idxDate(i), value = spike ? daily.dep[i] : (daily.n[i] ? daily.c[i] : null);
+    items.push({ label: (i - i0) % 7 === 0 ? `${+date.slice(8)} ${MONTHS[+date.slice(5, 7) - 1]}` : null, value, date, n: daily.n[i], c: daily.c[i],
+      color: i === i0 ? hi : PAL.quiet, mark: i === i0 ? (spike ? `${value} min` : `${value}`) : null,
+      tip: [F.date(date), spike ? [['mean departure delay', value == null ? '–' : F.min(value)], ['scheduled', daily.n[i]]]
+        : [['cancelled', daily.c[i]], ['scheduled', daily.n[i]]]] });
+  }
+  return figure({ title: spike ? 'Mean departure delay on this route, by day' : 'Cancelled flights on this route, by day',
+    sub: 'Four weeks before the alert and one week after. The alert day is highlighted.',
+    chart: w => colChart({ width: w, items, yFmt: spike ? v => `${v}` : F.int }),
+    table: { cols: [{ key: 'date', label: 'Day', fmt: F.date }, { key: 'n', label: 'Scheduled', num: true },
+      spike ? { key: 'value', label: 'Mean dep. delay (min)', num: true } : { key: 'c', label: 'Cancelled', num: true }], rows: items } });
+}
+
+function triagePanel(a) {
+  const act = D.core.ontology.actions.route_alert;
+  const state = h('div', { class: 'fig' }), log = h('ul', { class: 'log' }), mode = h('p', { class: 'note' });
+  const who = h('input', { class: 'field', id: 'triage-assignee', type: 'text', placeholder: 'Name or team', maxlength: 60 });
+  const note = h('textarea', { class: 'field', id: 'triage-note', rows: 2, placeholder: 'What you found or decided', maxlength: 500 });
+  const draw = () => {
+    const t = Triage.get(a.id), ro = Triage.mode === 'readonly';
+    if (document.activeElement !== who) who.value = t.assignee || '';
+    who.disabled = note.disabled = ro;
+    state.replaceChildren(h('div', { class: 'row' }, statusPill(t.status), t.assignee && h('span', { class: 'muted', text: `Assigned to ${t.assignee}` })),
+      h('div', { class: 'row' }, act.transitions[t.status].map((to, i) => h('button', { class: 'btn' + (i === 0 ? ' primary' : ''), type: 'button', disabled: ro,
+        onclick: () => Triage.apply(a.id, { status: to }, { from: t.status, to }) }, act.labels[to]))),
+      Triage.error && h('p', { class: 'banner', text: Triage.error }));
+    log.replaceChildren(...[...(t.history || [])].reverse().map(e => {
+      const when = new Date(e.at), stamp = `${when.getDate()} ${MONTHS[when.getMonth()]} ${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}`;
+      const what = e.to ? `${STATUS_LABEL[e.to]} (was ${STATUS_LABEL[e.from].toLowerCase()})` : e.assignee != null ? (e.assignee ? `Assigned to ${e.assignee}` : 'Unassigned') : `Note: ${e.note}`;
+      return h('li', { text: `${stamp}, ${Triage.who(e.by)}. ${what}` });
+    }));
+    mode.textContent = Triage.describe();
+  };
+  const saveWho = () => { const v = who.value.trim(); if (v !== (Triage.get(a.id).assignee || '')) Triage.apply(a.id, { assignee: v }, { assignee: v }); };
+  who.addEventListener('change', saveWho);
+  const add = h('button', { class: 'btn', type: 'button', style: { justifySelf: 'start' }, onclick: () => {
+    const v = note.value.trim(); if (!v) return; Triage.apply(a.id, {}, { note: v }); note.value = ''; } }, 'Add note');
+  Triage.onChange = () => { if (state.isConnected) draw(); };
+  draw();
+  return h('section', { class: 'sect' }, h('h2', { text: 'Triage' }), state,
+    h('label', { class: 'lab' }, 'Assignee', who), h('label', { class: 'lab' }, 'Note', note), add, log, mode);
+}
+
+const FLIGHT_STATUS = { completed: 'Flew', cancelled: 'Cancelled', no_arrival: 'No arrival recorded' };
+DETAIL.alert = {
+  kind: 'Route alert',
+  get: id => need('route_daily').catch(() => null).then(() => D.byId.alert.get(id)),
+  render(a) {
+    const od = a.origin_day && D.byId.oday.get(a.origin_day), route = D.byId.route.get(a.route);
+    return [
+      h('div', { class: 'fig' }, h('h1', { text: a.title }),
+        h('div', { class: 'row' }, sevMark(a.sev), h('span', { class: 'muted', text: alertWhen(a) }), h('span', { class: 'muted', text: a.id }))),
+      h('p', { text: a.summary }),
+      h('section', { class: 'sect' }, h('h2', { text: 'Why this fired' }), whyBlock(a)),
+      h('section', { class: 'sect' }, alertChart(a)),
+      h('section', { class: 'sect' }, h('h2', { text: 'Context' }), kv([
+        ['Route', link('route', a.route, `${a.o} → ${a.d}`)],
+        ['Destination', link('airport', a.d, D.byId.airport.get(a.d)?.name || a.d)],
+        route && ['Route on-time arrivals, 2013', F.pct(route.on_time)],
+        route && ['Other alerts on this route', String(route.alerts - 1)],
+        od && ['Origin day', link('day', od.id, `${a.o}, ${F.date(od.date)}`)],
+        od && [`${a.o} that day`, `${F.min(od.mean_dep)} mean delay, ${F.pct(od.cancel_rate)} cancelled`],
+        od && ['Airport-wide disruption', od.disrupted ? 'Yes' : 'No'],
+        od && ['Lowest visibility', od.vis == null ? '–' : `${od.vis} mi`],
+        od && ['Precipitation', od.precip == null ? '–' : `${F.num(od.precip, 2)} in`],
+        od && ['Peak gust', od.gust == null ? 'none recorded' : `${Math.round(od.gust)} mph`]])),
+      a.flights.length ? h('section', { class: 'sect' }, h('h2', { text: `Flights that day (${a.flights.length})` }),
+        simpleTable([{ label: 'Flight', render: r => r[0] }, { label: 'Airline', render: r => link('airline', r[1], r[1]) },
+          { label: 'Sched.', render: r => F.hhmm(r[3]) }, { label: 'Outcome', render: r => FLIGHT_STATUS[r[4]] },
+          { label: 'Dep. delay', num: true, render: r => r[5] == null ? '–' : F.smin(r[5]) }, { label: 'Arr. delay', num: true, render: r => r[6] == null ? '–' : F.smin(r[6]) },
+          { label: 'Tail', render: r => r[2] || '–' }], a.flights)) : null,
+      triagePanel(a),
+    ];
+  },
+};
+
+// ---------- route map (geometry is pre-projected in miles from New York) ----------
+const MP = { metric: 'on_time', origin: 'all', zoom: 'mainland', sel: null };
+const METRICS = {
+  on_time: { label: 'On-time arrivals', fmt: v => F.pct(v), worstFirst: (a, b) => a - b,
+    color: v => PAL.div((v - D.core.meta.kpis.on_time) / 0.15), legend: () => ['60%', `${F.pct(D.core.meta.kpis.on_time, 1)}, all routes`, '90%'],
+    stops: () => [-1, -0.5, 0, 0.5, 1].map(PAL.div) },
+  cancel_rate: { label: 'Cancellations', fmt: v => F.pct(v, 1), worstFirst: (a, b) => b - a,
+    color: v => PAL.seq(v / 0.06), legend: () => ['0%', '3%', '6% or more'], stops: () => [0, 0.25, 0.5, 0.75, 1].map(PAL.seq) },
+  alerts: { label: 'Alerts raised', fmt: v => F.int(v), worstFirst: (a, b) => b - a,
+    color: v => (v ? PAL.seq(0.25 + 0.75 * v / 12) : PAL.quiet), legend: () => ['1', '6', '12 or more'], stops: () => [0.25, 0.45, 0.65, 0.85, 1].map(PAL.seq) },
+};
+
+function mapRoutes() { return D.routes.filter(r => (MP.origin === 'all' || r.o === MP.origin) && r.o !== r.d && D.byId.airport.get(r.d).miles > 30); }
+function destStats(routes) {
+  const m = new Map();
+  for (const r of routes) {
+    const d = m.get(r.d) || m.set(r.d, { id: r.d, flights: 0, arrived: 0, late: 0, cancelled: 0, alerts: 0, routes: [] }).get(r.d);
+    d.flights += r.flights; d.arrived += r.arrived; d.late += r.arrived * (1 - r.on_time); d.cancelled += r.cancelled; d.alerts += r.alerts; d.routes.push(r);
+  }
+  for (const d of m.values()) { d.on_time = d.arrived ? 1 - d.late / d.arrived : null; d.cancel_rate = d.cancelled / d.flights; }
+  return m;
+}
+
+function drawMap(width) {
+  const geo = D.geo, metric = METRICS[MP.metric], routes = mapRoutes(), dests = destStats(routes);
+  const inView = [...dests.keys()].map(id => D.byId.airport.get(id)).filter(a => MP.zoom === 'all' || a.miles <= 2800);
+  const xs = inView.map(a => a.x).concat(0), ys = inView.map(a => a.y).concat(0);
+  let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const padX = (x1 - x0) * 0.06, padY = (y1 - y0) * 0.08; x0 -= padX; x1 += padX * 1.6; y0 -= padY; y1 += padY;
+  const height = Math.round(Math.max(width * 0.55, Math.min(width * 1.05, width * (y1 - y0) / (x1 - x0))));
+  const k = Math.min(width / (x1 - x0), height / (y1 - y0)), ox = (width - (x1 - x0) * k) / 2, oy = (height - (y1 - y0) * k) / 2;
+  const X = x => ox + (x - x0) * k, Y = y => oy + (y - y0) * k;
+  const ringPath = flat => { let d = ''; for (let i = 0; i < flat.length; i += 2) d += (i ? 'L' : 'M') + X(flat[i]).toFixed(1) + ' ' + Y(flat[i + 1]).toFixed(1); return d + 'Z'; };
+  const svg = s('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img',
+    'aria-label': `Routes from New York coloured by ${metric.label.toLowerCase()}` });
+  svg.append(s('path', { d: geo.land.map(ringPath).join(''), fill: 'var(--paper)', stroke: 'var(--line-2)', 'stroke-width': 0.6 }),
+    s('path', { d: geo.states.flatMap(st => st.rings.map(ringPath)).join(''), fill: 'var(--paper)', stroke: 'var(--line-2)', 'stroke-width': 0.6, 'stroke-linejoin': 'round' }));
+  for (const miles of (MP.zoom === 'all' ? [1000, 2000, 3000, 4000, 5000] : [500, 1000, 1500, 2000, 2500])) {
+    svg.append(s('circle', { cx: X(0), cy: Y(0), r: miles * k, fill: 'none', stroke: 'var(--line-2)', 'stroke-width': 0.7, opacity: 0.8 }),
+      s('text', { x: X(miles * 0.259), y: Y(miles * 0.966) + 3, 'text-anchor': 'middle', style: 'font-size:10px;paint-order:stroke;stroke:var(--surface);stroke-width:3px' }, `${F.int(miles)} mi`));
+  }
+  const maxF = Math.max(...routes.map(r => r.flights)), lines = s('g');
+  const ordered = [...routes].sort((a, b) => metric.worstFirst(b[MP.metric], a[MP.metric]));
+  for (const r of ordered) {
+    const o = D.byId.airport.get(r.o), d = D.byId.airport.get(r.d), dim = MP.sel && r.d !== MP.sel;
+    lines.append(s('line', { x1: X(o.x), y1: Y(o.y), x2: X(d.x), y2: Y(d.y), stroke: metric.color(r[MP.metric]),
+      'stroke-width': (0.7 + 2.6 * Math.sqrt(r.flights / maxF)).toFixed(2), 'stroke-linecap': 'round', opacity: dim ? 0.1 : 0.8 }));
+  }
+  svg.append(lines);
+  const maxD = Math.max(...[...dests.values()].map(d => d.flights)), placed = [];
+  const byFlights = [...dests.values()].sort((a, b) => b.flights - a.flights);
+  const labelCount = width < 520 ? 12 : 30, labels = s('g'), points = [];
+  placed.push([X(0) + 6, Y(0) + 3, X(0) + 66, Y(0) + 19]);   // keep airport codes clear of the New York label
+  byFlights.forEach((d, rank) => {
+    const a = D.byId.airport.get(d.id), cx = X(a.x), cy = Y(a.y);
+    if (cx < -20 || cx > width + 20 || cy < -20 || cy > height + 20) return;
+    const r = 2.5 + 5.5 * Math.sqrt(d.flights / maxD), g = s('g', { opacity: MP.sel && MP.sel !== d.id ? 0.35 : 1 });
+    g.append(s('circle', { cx, cy, r, fill: metric.color(d[MP.metric]), stroke: MP.sel === d.id ? 'var(--accent)' : PAL.surface, 'stroke-width': MP.sel === d.id ? 2.5 : 1.5 }));
+    const box = [cx + r + 2, cy - 7, cx + r + 2 + 24, cy + 6];
+    if ((rank < labelCount || MP.sel === d.id) && !placed.some(p => box[0] < p[2] && box[2] > p[0] && box[1] < p[3] && box[3] > p[1])) {
+      placed.push(box);
+      labels.append(s('text', { x: cx + r + 3, y: cy + 4, opacity: MP.sel && MP.sel !== d.id ? 0.4 : 1, style: 'fill:var(--ink);font-weight:700;font-stretch:75%;paint-order:stroke;stroke:var(--surface);stroke-width:2.5px;pointer-events:none' }, d.id));
+    }
+    // Keyboard target only; pointer input goes through the nearest-airport layer below.
+    const hit = s('circle', { cx, cy, r: r + 3, fill: 'transparent', tabindex: 0, role: 'button', style: 'pointer-events:none',
+      'aria-label': `${a.name}, ${metric.label} ${metric.fmt(d[MP.metric])}` });
+    const tip = () => tipRows(`${d.id}  ${a.name}`, [[metric.label.toLowerCase(), metric.fmt(d[MP.metric])], ['flights', F.int(d.flights)], ['miles', F.int(a.miles)]]);
+    const pick = () => { MP.sel = MP.sel === d.id ? null : d.id; VIEW.map.redraw(); };
+    hit.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+    hit.addEventListener('focus', () => Tip.show({ clientX: svg.getBoundingClientRect().left + cx, clientY: svg.getBoundingClientRect().top + cy }, tip()));
+    hit.addEventListener('blur', Tip.hide);
+    points.push({ cx, cy, tip, pick });
+    g.append(hit); svg.append(g);
+  });
+  // Dense clusters: the pointer only has to be closest to an airport, within 26px.
+  const layer = s('rect', { x: 0, y: 0, width, height, fill: 'transparent' });
+  const nearest = e => {
+    const box = svg.getBoundingClientRect(), px = (e.clientX - box.left) * (width / box.width), py = (e.clientY - box.top) * (width / box.width);
+    let best = null, bd = 26 * 26;
+    for (const pt of points) { const dd = (pt.cx - px) ** 2 + (pt.cy - py) ** 2; if (dd < bd) { bd = dd; best = pt; } }
+    return best;
+  };
+  layer.addEventListener('pointermove', e => { const pt = nearest(e); layer.style.cursor = pt ? 'pointer' : 'default'; pt ? Tip.show(e, pt.tip()) : Tip.hide(); });
+  layer.addEventListener('pointerleave', Tip.hide);
+  layer.addEventListener('click', e => { const pt = nearest(e); if (pt) { Tip.hide(); pt.pick(); } });
+  svg.append(layer);
+  svg.append(labels, s('circle', { cx: X(0), cy: Y(0), r: 4.5, fill: 'var(--ink)', stroke: PAL.surface, 'stroke-width': 1.5 }),
+    s('text', { x: X(0) + 9, y: Y(0) + 15, style: 'fill:var(--ink);font-weight:700;paint-order:stroke;stroke:var(--surface);stroke-width:2.5px' }, 'New York'));
+  return svg;
+}
+
+VIEW.map = {
+  render(root) {
+    const controls = h('div', { class: 'row' }), wrap = h('div', { class: 'mapwrap' }, h('p', { class: 'boot', text: 'Loading map…' }));
+    const legend = h('div', { class: 'row', style: { fontSize: '12px', color: 'var(--ink-2)' } }), panel = h('div', { class: 'fig' }), list = h('div', { class: 'fig' });
+    const redraw = () => {
+      controls.replaceChildren(
+        seg(Object.entries(METRICS).map(([key, m]) => [key, m.label]), MP.metric, v => { MP.metric = v; redraw(); }, 'Colour by'),
+        seg([['all', 'All origins'], ['EWR', 'EWR'], ['JFK', 'JFK'], ['LGA', 'LGA']], MP.origin, v => { MP.origin = v; redraw(); }, 'Origin'),
+        seg([['mainland', 'Within 2,800 mi'], ['all', 'All destinations']], MP.zoom, v => { MP.zoom = v; redraw(); }, 'Zoom'));
+      if (!D.geo) return;
+      const metric = METRICS[MP.metric], routes = mapRoutes(), dests = destStats(routes);
+      if (MP.sel && !dests.has(MP.sel)) MP.sel = null;
+      wrap.replaceChildren(drawMap(Math.max(280, wrap.clientWidth || $('#main').clientWidth - 34)));
+      const [lo, mid, hi] = metric.legend();
+      legend.replaceChildren(h('span', { text: metric.label }), h('span', { text: lo }),
+        h('span', { style: { width: '120px', height: '10px', borderRadius: '2px', background: `linear-gradient(90deg, ${metric.stops().join(',')})` } }),
+        h('span', { text: hi }), h('span', { class: 'muted', text: `Middle: ${mid}. Line width and dot size show flights.` }));
+      const sel = MP.sel && dests.get(MP.sel);
+      panel.replaceChildren(...(sel ? [
+        h('div', { class: 'fig-head' }, h('h2', null, link('airport', sel.id, `${sel.id}  ${D.byId.airport.get(sel.id).name}`)),
+          h('button', { class: 'linkish', type: 'button', onclick: () => { MP.sel = null; redraw(); } }, 'Clear selection')),
+        simpleTable([{ label: 'Route', render: r => link('route', r.id, `${r.o} → ${r.d}`) }, { key: 'flights', label: 'Flights', num: true, fmt: F.int },
+          { key: 'on_time', label: 'On time', num: true, fmt: v => F.pct(v) }, { key: 'mean_arr', label: 'Mean arr. delay', num: true, fmt: F.smin },
+          { key: 'cancel_rate', label: 'Cancelled', num: true, fmt: v => F.pct(v, 1) }, { key: 'alerts', label: 'Alerts', num: true }], sel.routes)]
+        : [h('p', { class: 'note', text: 'Select an airport on the map to see its routes.' })]));
+      list.replaceChildren(h('h2', { text: `Routes, worst ${metric.label.toLowerCase()} first` }),
+        dataTable({ rows: routes.filter(r => r.flights >= 200), page: 12, sort: { key: MP.metric, dir: MP.metric === 'on_time' ? 'asc' : 'desc' }, onRow: r => openObj('route', r.id, true),
+          cols: [{ key: 'id', label: 'Route', render: r => `${r.o} → ${r.d}` }, { key: 'dest_name', label: 'Destination' }, { key: 'flights', label: 'Flights', num: true, fmt: F.int },
+            { key: 'on_time', label: 'On time', num: true, fmt: v => F.pct(v) }, { key: 'cancel_rate', label: 'Cancelled', num: true, fmt: v => F.pct(v, 1) },
+            { key: 'alerts', label: 'Alerts', num: true }] }),
+        h('p', { class: 'note', text: 'Routes with at least 200 flights in the year.' }));
+    };
+    this.redraw = redraw;
+    put(root, viewHead('Route map', 'Azimuthal equidistant projection centred on New York. Distance and bearing from the city are true, so each route is a straight great-circle line and the range rings are circles.'),
+      controls, wrap, legend, panel, h('section', { class: 'sect' }, list));
+    redraw();
+    need('geo').then(() => { if (wrap.isConnected) redraw(); }).catch(err => wrap.replaceChildren(h('p', { class: 'boot', text: `The map outline could not load (${err.message}). The route table below still works.` })));
+  },
+};
+
+// ---------- object explorer: one table per object type, every row opens the object ----------
+const EX = { type: 'route', q: '' };
+const airlineName = id => D.byId.airline.get(id)?.name || id;
+const pct0 = v => F.pct(v), pct1 = v => F.pct(v, 1);
+const OBJ = {
+  route: { label: 'Routes', count: 'route', rows: () => D.routes, sort: 'flights', text: r => `${r.id} ${r.dest_name}`,
+    cols: [{ key: 'id', label: 'Route', render: r => h('span', { class: 'code', text: `${r.o} → ${r.d}` }) }, { key: 'dest_name', label: 'Destination' },
+      { key: 'flights', label: 'Flights', num: true, fmt: F.int }, { key: 'on_time', label: 'On time', num: true, fmt: pct0 },
+      { key: 'mean_arr', label: 'Mean arr. delay', num: true, fmt: F.smin }, { key: 'p90_arr', label: '90th pct.', num: true, fmt: F.smin },
+      { key: 'cancel_rate', label: 'Cancelled', num: true, fmt: pct1 }, { key: 'dist', label: 'Miles', num: true, fmt: F.int },
+      { key: 'ncar', label: 'Airlines', num: true, sortVal: r => r.carriers.length, render: r => r.carriers.length }, { key: 'alerts', label: 'Alerts', num: true }] },
+  airline: { label: 'Airlines', count: 'airline', rows: () => D.airlines, sort: 'flights', text: r => `${r.id} ${r.name} ${r.type}`,
+    cols: [{ key: 'name', label: 'Airline' }, { key: 'id', label: 'Code' }, { key: 'type', label: 'Type' }, { key: 'flights', label: 'Flights', num: true, fmt: F.int },
+      { key: 'routes', label: 'Routes', num: true }, { key: 'on_time', label: 'On time', num: true, fmt: pct0 }, { key: 'mean_arr', label: 'Mean arr. delay', num: true, fmt: F.smin },
+      { key: 'cancel_rate', label: 'Cancelled', num: true, fmt: pct1 }, { key: 'registry_aircraft', label: 'Aircraft', num: true, fmt: F.int }] },
+  airport: { label: 'Airports', count: 'airport', rows: () => D.airports, sort: 'flights', text: r => `${r.id} ${r.name}`,
+    cols: [{ key: 'id', label: 'Code', render: r => h('span', { class: 'code', text: r.id }) }, { key: 'name', label: 'Airport' },
+      { key: 'origin', label: 'Role', sortVal: r => (r.origin ? 'a' : 'b'), render: r => (r.origin ? 'New York origin' : 'Destination') },
+      { key: 'flights', label: 'Flights', num: true, fmt: F.int }, { key: 'carriers', label: 'Airlines', num: true }, { key: 'on_time', label: 'On time', num: true, fmt: pct0 },
+      { key: 'mean_delay', label: 'Mean delay', num: true, fmt: F.smin }, { key: 'cancel_rate', label: 'Cancelled', num: true, fmt: pct1 }, { key: 'miles', label: 'Miles from NYC', num: true, fmt: F.int }] },
+  aircraft: { label: 'Aircraft', count: 'aircraft', lazy: 'aircraft', rows: () => D.aircraft, sort: 'flights', text: r => `${r.id} ${r.airline} ${r.maker} ${r.model}`,
+    cols: [{ key: 'id', label: 'Tail', render: r => h('span', { class: 'code', text: r.id }) }, { key: 'airline', label: 'Operator', render: r => airlineName(r.airline) },
+      { key: 'maker', label: 'Maker' }, { key: 'model', label: 'Model' }, { key: 'year', label: 'Built', num: true }, { key: 'seats', label: 'Seats', num: true },
+      { key: 'flights', label: 'Flights', num: true, fmt: F.int }, { key: 'routes', label: 'Routes', num: true }, { key: 'mean_arr', label: 'Mean arr. delay', num: true, fmt: F.smin }] },
+  day: { label: 'Origin days', count: 'origin_day', rows: () => D.origin_days, sort: 'mean_dep', text: r => `${r.a} ${r.date} ${F.date(r.date)} ${r.disrupted ? 'disrupted' : ''}`,
+    cols: [{ key: 'date', label: 'Day', render: r => F.date(r.date) }, { key: 'a', label: 'Airport' }, { key: 'flights', label: 'Flights', num: true },
+      { key: 'mean_dep', label: 'Mean dep. delay', num: true, fmt: F.smin }, { key: 'cancel_rate', label: 'Cancelled', num: true, fmt: pct1 },
+      { key: 'vis', label: 'Min. visibility (mi)', num: true }, { key: 'precip', label: 'Precip. (in)', num: true, fmt: v => F.num(v, 2) }, { key: 'gust', label: 'Peak gust (mph)', num: true, fmt: v => (v == null ? '–' : F.int(v)) },
+      { key: 'disrupted', label: 'Disrupted', sortVal: r => (r.disrupted ? 1 : 0), render: r => (r.disrupted ? 'Yes' : '') }] },
+};
+
+VIEW.explore = {
+  render(root) {
+    const counts = D.core.meta.counts, body = h('div', { class: 'fig' });
+    const search = h('input', { class: 'field', id: 'object-search', type: 'search', placeholder: 'Filter this table', value: EX.q, 'aria-label': 'Filter objects',
+      style: { maxWidth: '280px' }, oninput: e => { EX.q = e.target.value.trim().toLowerCase(); drawTable(); } });
+    const chipRow = h('div', { class: 'row' });
+    const chip = (key, label, n, on, pick) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(on), onclick: pick }, label, h('span', { class: 'n', text: F.int(n) }));
+    const drawTable = () => {
+      if (EX.type === 'flight') {
+        body.replaceChildren(h('p', { class: 'lede', text: `All ${F.int(counts.flight)} flights and ${F.int(counts.delay)} delays stay in the pipeline's Parquet tables; the page carries their aggregates. These are the 40 longest arrival delays of the year.` }),
+          simpleTable([{ label: 'Flight', render: r => r.flight }, { label: 'Airline', render: r => link('airline', r.airline, airlineName(r.airline)) },
+            { label: 'Route', render: r => link('route', r.route, r.route.replace('-', ' → ')) }, { label: 'Day', render: r => F.date(r.date) },
+            { label: 'Dep. delay', num: true, render: r => F.smin(r.dep) }, { label: 'Arr. delay', num: true, render: r => F.smin(r.arr) }, { label: 'Tail', render: r => r.tail || '–' }], D.core.stats.worst_flights),
+          h('h2', { text: 'Delays by severity and phase' }),
+          simpleTable([{ key: 'severity', label: 'Severity' }, { key: 'phase', label: 'Phase' }, { key: 'delays', label: 'Delays', num: true, fmt: F.int },
+            { key: 'adverse_share', label: 'With adverse weather at origin', num: true, fmt: pct0 }], D.core.stats.delay_severity),
+          h('p', { class: 'note', text: 'A delay is a flight that left or arrived 15+ min late. Minor is under 45 min, major under 2 hours, severe beyond. Adverse weather means low visibility, precipitation or strong wind at the origin in the scheduled hour.' }));
+        return;
+      }
+      const def = OBJ[EX.type];
+      const show = () => {
+        const rows = def.rows().filter(r => !EX.q || def.text(r).toLowerCase().includes(EX.q));
+        body.replaceChildren(h('p', { class: 'note', text: `${F.int(rows.length)} ${def.label.toLowerCase()}. Select a column to sort, a row to open it.` }),
+          dataTable({ cols: def.cols, rows, sort: { key: def.sort, dir: 'desc' }, onRow: r => openObj(EX.type, r.id, true) }));
+      };
+      if (def.lazy && !D[def.lazy]) { body.replaceChildren(h('p', { class: 'muted', text: 'Loading…' })); need(def.lazy).then(() => { if (body.isConnected && OBJ[EX.type] === def) show(); }); }
+      else show();
+    };
+    const draw = () => {
+      chipRow.replaceChildren(...Object.entries(OBJ).map(([key, def]) => chip(key, def.label, counts[def.count], EX.type === key, () => { EX.type = key; EX.q = ''; search.value = ''; draw(); })),
+        chip('flight', 'Flights and delays', counts.flight, EX.type === 'flight', () => { EX.type = 'flight'; draw(); }),
+        chip('alert', 'Route alerts', counts.route_alert, false, () => setView('inbox')));
+      search.hidden = EX.type === 'flight';
+      drawTable();
+    };
+    put(root, viewHead('Objects', 'The pipeline ends in eight linked object types. Every code and name in this app opens its object, and each object links onward to its neighbours.'),
+      chipRow, search, body);
+    draw();
+  },
+};
+
+// ---------- object details ----------
+const routeLinkRows = rows => simpleTable([{ label: 'Route', render: r => link('route', r.id, `${r.o} → ${r.d}`) }, { key: 'flights', label: 'Flights', num: true, fmt: F.int },
+  { key: 'on_time', label: 'On time', num: true, fmt: pct0 }, { key: 'mean_arr', label: 'Mean arr. delay', num: true, fmt: F.smin }, { key: 'alerts', label: 'Alerts', num: true }], rows);
+const alertLinks = list => (list.length ? h('div', { class: 'bay' }, list.map(a => h('div', { class: 'row', style: { fontSize: '13px' } },
+  sevMark(a.sev), link('alert', a.id, `${TYPE_LABEL[a.type]}, ${a.o} → ${a.d}`), h('span', { class: 'muted', text: alertWhen(a) }), statusPill(Triage.get(a.id).status))))
+  : h('p', { class: 'note', text: 'No alerts.' }));
+
+DETAIL.airline = {
+  kind: 'Airline', get: id => D.byId.airline.get(id),
+  render(a) {
+    const mine = D.routes.map(r => ({ r, c: r.carriers.find(c => c.id === a.id) })).filter(x => x.c).sort((x, y) => y.c.flights - x.c.flights);
+    const fleet = D.core.fleet.filter(f => f.airline === a.id);
+    return [h('div', { class: 'fig' }, h('h1', { text: a.name }), h('p', { class: 'muted', text: `${a.id}, ${a.type.toLowerCase()} carrier. Registered as ${a.legal}` })),
+      tiles([[F.int(a.flights), 'flights from New York'], [F.pct(a.on_time), 'arrived on time'], [F.smin(a.mean_arr), 'mean arrival delay'], [F.pct(a.cancel_rate, 1), 'cancelled']]),
+      h('section', { class: 'sect' }, figure({ title: 'On-time arrivals by month', sub: 'Share of completed flights arriving under 15 min late',
+        chart: w => colChart({ width: w, height: 140, yFmt: pct0, yMax: 1, items: a.monthly.map(m => ({ label: MONTHS[m.month - 1][0], value: m.on_time,
+          tip: [MONTHS[m.month - 1], [['on time', F.pct(m.on_time)], ['flights', F.int(m.flights)]]] })) }),
+        table: { cols: [{ key: 'month', label: 'Month', fmt: m => MONTHS[m - 1] }, { key: 'flights', label: 'Flights', num: true, fmt: F.int }, { key: 'on_time', label: 'On time', num: true, fmt: pct0 },
+          { key: 'mean_arr', label: 'Mean arr. delay', num: true, fmt: F.smin }], rows: a.monthly } })),
+      h('section', { class: 'sect' }, h('h2', { text: `Routes served (${mine.length})` }),
+        simpleTable([{ label: 'Route', render: x => link('route', x.r.id, `${x.r.o} → ${x.r.d}`) }, { label: 'Flights', num: true, render: x => F.int(x.c.flights) },
+          { label: 'On time', num: true, render: x => F.pct(x.c.on_time) }, { label: 'Mean arr. delay', num: true, render: x => F.smin(x.c.mean_arr) }], mine.slice(0, 15)),
+        mine.length > 15 && h('p', { class: 'note', text: `The 15 busiest of ${mine.length}.` })),
+      h('section', { class: 'sect' }, h('h2', { text: `Fleet flown (${F.int(a.registry_aircraft)} registry-matched aircraft)` }),
+        fleet.length ? simpleTable([{ key: 'maker', label: 'Maker' }, { key: 'model', label: 'Model' }, { key: 'aircraft', label: 'Aircraft', num: true },
+          { key: 'flights', label: 'Flights', num: true, fmt: F.int }, { key: 'seats', label: 'Seats', num: true }, { key: 'year', label: 'Mean year built', num: true, fmt: v => F.num(v, 0) }], fleet.slice(0, 14))
+          : h('p', { class: 'note', text: 'This airline reports fleet numbers rather than registered tail numbers, so its aircraft do not match the FAA registry.' }))];
+  },
+};
+DETAIL.airport = {
+  kind: 'Airport', get: id => D.byId.airport.get(id),
+  render(a) {
+    const routes = D.routes.filter(r => r.o === a.id || r.d === a.id), alerts = D.alerts.filter(x => x.o === a.id || x.d === a.id);
+    return [h('div', { class: 'fig' }, h('h1', { text: a.name }), h('p', { class: 'muted', text: `${a.id}, ${a.origin ? 'New York origin' : `${F.int(a.miles)} miles from New York`}` })),
+      tiles([[F.int(a.flights), a.origin ? 'departures' : 'flights from New York'], [F.pct(a.on_time), a.origin ? 'left on time' : 'arrived on time'],
+        [F.smin(a.mean_delay), a.origin ? 'mean departure delay' : 'mean arrival delay'], [F.pct(a.cancel_rate, 1), 'cancelled']]),
+      kv([['Airlines', a.carriers], [a.origin ? 'Destinations' : 'New York origins', a.connected], ['Time zone', a.tz || '–'],
+        ['Position', `${a.lat.toFixed(3)}, ${a.lon.toFixed(3)}`], a.source !== 'airport list' && ['Record source', 'Supplement file (missing from the airport list)']]),
+      h('section', { class: 'sect' }, h('h2', { text: `Routes (${routes.length})` }), routeLinkRows(routes.slice(0, 20)), routes.length > 20 && h('p', { class: 'note', text: `The 20 busiest of ${routes.length}.` })),
+      h('section', { class: 'sect' }, h('h2', { text: `Alerts (${alerts.length})` }), alertLinks(alerts.slice(-12).reverse()), alerts.length > 12 && h('p', { class: 'note', text: 'The 12 most recent.' }))];
+  },
+};
+DETAIL.route = {
+  kind: 'Route', get: id => need('route_daily').catch(() => null).then(() => D.byId.route.get(id)),
+  render(r) {
+    const daily = D.byId.daily?.get(r.id), alerts = D.alerts.filter(a => a.route === r.id);
+    return [h('div', { class: 'fig' }, h('h1', { class: 'code', text: `${r.o} → ${r.d}` }),
+      h('p', null, link('airport', r.o, D.byId.airport.get(r.o).name), ' to ', link('airport', r.d, r.dest_name))),
+      tiles([[F.int(r.flights), 'flights'], [F.pct(r.on_time), 'arrived on time'], [F.smin(r.mean_arr), 'mean arrival delay'], [F.pct(r.cancel_rate, 1), 'cancelled']]),
+      kv([['90th percentile arrival delay', F.smin(r.p90_arr)], ['Median arrival delay', F.smin(r.median_arr)], ['Mean departure delay', F.smin(r.mean_dep)],
+        ['Minutes made up in the air, mean', F.num(r.recovery)], ['Median air time', F.min(r.air_time)],
+        ['Distance, reported and great-circle', `${F.int(r.dist)} and ${F.int(r.gc)} mi`], ['Days operated', r.days]]),
+      daily && h('section', { class: 'sect' }, figure({ title: 'Mean departure delay by day', sub: 'Each square is a day; columns are weeks. Empty squares had no flights.',
+        chart: w => calendarHeat({ width: w, color: v => PAL.seq(v / 60), days: daily.dep.map((v, i) => ({ date: idxDate(i), value: daily.n[i] ? Math.max(0, v ?? 0) : null,
+          tip: [F.date(idxDate(i)), [['mean departure delay', v == null ? '–' : F.min(v)], ['scheduled', daily.n[i]], ['cancelled', daily.c[i]]]] })) }),
+        caption: 'Light is on time, dark is 60 min or more.' })),
+      h('section', { class: 'sect' }, h('h2', { text: `Airlines on this route (${r.carriers.length})` }),
+        simpleTable([{ label: 'Airline', render: c => link('airline', c.id, airlineName(c.id)) }, { key: 'flights', label: 'Flights', num: true, fmt: F.int },
+          { key: 'on_time', label: 'On time', num: true, fmt: pct0 }, { key: 'mean_arr', label: 'Mean arr. delay', num: true, fmt: F.smin }, { key: 'cancel_rate', label: 'Cancelled', num: true, fmt: pct1 }], r.carriers)),
+      h('section', { class: 'sect' }, h('h2', { text: `Alerts (${alerts.length})` }), alertLinks(alerts))];
+  },
+};
+DETAIL.aircraft = {
+  kind: 'Aircraft', get: id => need('aircraft').then(() => D.byId.aircraft.get(id)),
+  render: a => [h('div', { class: 'fig' }, h('h1', { class: 'code', text: a.id }), h('p', { class: 'muted', text: `${a.maker} ${a.model}` })),
+    kv([['Main operator', link('airline', a.airline, airlineName(a.airline))], ['Built', a.year ?? '–'], ['Seats', a.seats], ['Engines', a.engines],
+      ['Flights from New York in 2013', F.int(a.flights)], ['Routes flown', a.routes], ['Mean arrival delay', F.smin(a.mean_arr)], ['Miles flown', F.int(a.miles)]])],
+};
+DETAIL.day = {
+  kind: 'Origin day', get: id => D.byId.oday.get(id),
+  render(o) {
+    const alerts = D.alerts.filter(a => a.origin_day === o.id), i = dayIdx(o.date);
+    const near = k => (i + k >= 0 && i + k <= 364 ? link('day', `${o.a}_${idxDate(i + k)}`, F.date(idxDate(i + k))) : null);
+    return [h('div', { class: 'fig' }, h('h1', { text: `${o.a}, ${F.date(o.date)}` }),
+      h('p', null, link('airport', o.a, D.byId.airport.get(o.a).name), o.disrupted ? '. Flagged as an airport-wide disruption.' : '.')),
+      tiles([[F.int(o.flights), 'scheduled departures'], [F.pct(o.cancel_rate, 1), 'cancelled'], [F.smin(o.mean_dep), 'mean departure delay'], [F.pct(o.late_share), 'left 15+ min late']]),
+      h('section', { class: 'sect' }, h('h2', { text: 'Weather at the airport' }), kv([['Temperature', o.tmin == null ? '–' : `${Math.round(o.tmin)} to ${Math.round(o.tmax)} °F`],
+        ['Precipitation', o.precip == null ? '–' : `${F.num(o.precip, 2)} in`], ['Lowest visibility', o.vis == null ? '–' : `${o.vis} mi`],
+        ['Peak sustained wind', o.wind == null ? '–' : `${Math.round(o.wind)} mph`], ['Peak gust', o.gust == null ? 'none recorded' : `${Math.round(o.gust)} mph`],
+        ['Hours with adverse weather', o.adverse_hours ?? '–'], ['Disruption score against the prior 28 days', o.z == null ? '–' : F.num(o.z)]]),
+        h('p', { class: 'note', text: 'The score is (mean delay − median) / max(1.4826 × MAD, 2 min). A day is flagged at 3.5 or more with a mean delay of at least 30 min, or when 10% of flights are cancelled.' })),
+      h('section', { class: 'sect' }, h('h2', { text: `Route alerts that day (${alerts.length})` }), alertLinks(alerts)),
+      h('div', { class: 'row', style: { justifyContent: 'space-between', fontSize: '13px' } }, h('span', null, near(-1)), h('span', null, near(1)))];
+  },
+};
+
+// ---------- delay analytics ----------
+const DL = { origin: 'all' };
+const ORIGINS = ['EWR', 'JFK', 'LGA'];
+
+VIEW.delays = {
+  render(root) {
+    const k = D.core.meta.kpis, st = D.core.stats, scoped = h('div', { class: 'fig', style: { gap: '22px' } });
+    const drawScoped = () => {
+      const origins = DL.origin === 'all' ? ORIGINS : [DL.origin];
+      const cal = h('div', { class: 'fig' }, origins.map(o => {
+        const days = D.origin_days.filter(d => d.a === o);
+        return h('div', { class: 'fig' }, h('h3', null, link('airport', o, `${o}  ${D.byId.airport.get(o).name}`)),
+          h('div', { class: 'scroll-x' }, calendarHeat({ width: chartWidth(root), color: v => PAL.seq(v / 60),
+            days: days.map(d => ({ date: d.date, value: Math.max(0, d.mean_dep), flag: d.disrupted, pick: () => openObj('day', d.id, true),
+              tip: [`${o}, ${F.date(d.date)}`, [['mean departure delay', F.min(d.mean_dep)], ['cancelled', F.pct(d.cancel_rate, 1)],
+                ['min. visibility', d.vis == null ? '–' : `${d.vis} mi`], ['precipitation', d.precip == null ? '–' : `${F.num(d.precip, 2)} in`]]] })) })));
+      }));
+      const disrupted = D.origin_days.filter(d => d.disrupted && origins.includes(d.a));
+      scoped.replaceChildren(
+        h('figure', { class: 'fig' }, h('div', { class: 'fig-head' }, h('div', null, h('h2', { text: 'The year, day by day' }),
+          h('p', { text: 'Mean departure delay per day. Outlined days are airport-wide disruptions. Select a day to open it.' }))),
+        h('div', { class: 'legend' }, h('span', null, 'On time'),
+          h('span', { style: { width: '110px', height: '10px', borderRadius: '2px', background: `linear-gradient(90deg, ${[0, 0.25, 0.5, 0.75, 1].map(PAL.seq).join(',')})` } }),
+          h('span', null, '60 min or more'), h('span', null, h('i', { class: 'box', style: { background: 'none', outline: '1.5px solid var(--accent)' } }), `Disruption (${disrupted.length} days)`)),
+        cal),
+        figure({ title: 'Delay builds through the day', sub: 'Mean departure delay by scheduled departure hour',
+          legend: origins.length > 1 ? origins.map(o => [o, PAL.series[ORIGINS.indexOf(o)]]) : null,
+          chart: w => lineChart({ width: w, yFmt: v => `${Math.round(v)}`, xTicks: [6, 9, 12, 15, 18, 21], xFmt: v => `${v}:00`, tipTitle: v => `${v}:00 to ${v}:59`,
+            series: origins.map(o => ({ name: o, color: PAL.series[ORIGINS.indexOf(o)],
+              pts: st.hourly.filter(r => r.origin === o && r.flights >= 200 && r.mean_dep != null).map(r => [r.hour, r.mean_dep]) })) }),
+          table: { cols: [{ key: 'origin', label: 'Origin' }, { key: 'hour', label: 'Hour', num: true, fmt: v => `${v}:00` }, { key: 'flights', label: 'Flights', num: true, fmt: F.int },
+            { key: 'mean_dep', label: 'Mean dep. delay (min)', num: true, fmt: v => F.num(v) }, { key: 'late_share', label: 'Left 15+ min late', num: true, fmt: v => F.pct(v) }],
+            rows: st.hourly.filter(r => origins.includes(r.origin)) },
+          caption: 'Minutes, on one axis. Hours with fewer than 200 flights in the year are left out. Early flights leave near schedule; delay accumulates until the evening.' }));
+    };
+    const weather = ['Visibility', 'Wind speed', 'Precipitation', 'Temperature'].map(dim => {
+      const rows = st.weather.filter(r => r.dimension === dim);
+      return h('figure', { class: 'fig' }, h('h3', { text: dim }),
+        hbars(rows.map(r => ({ label: r.bin, value: Math.max(0, r.mean_dep), text: `${Math.round(r.mean_dep)} min` }))),
+        h('figcaption', { text: `Cancelled: ${rows.map(r => F.pct(r.cancel_rate, 1)).join(', ')} in the same order.` }));
+    });
+    const byOnTime = [...D.airlines].sort((a, b) => b.on_time - a.on_time);
+    const bands = st.delay_bands, total = bands.reduce((n, b) => n + b.flights, 0);
+    const bandShort = g => (g === -2 ? '<−15' : g === 12 ? '180+' : String(g * 15));
+    put(root, viewHead('Delays', 'Where and when New York departures ran late in 2013, and how much of it the weather explains.'),
+      tiles([[F.int(k.flights), 'scheduled departures'], [F.pct(k.on_time, 1), 'arrived on time', 'under 15 min late'], [F.pct(k.cancel_rate, 1), 'cancelled', `${F.int(k.cancelled)} flights`],
+        [F.min(k.mean_dep), 'mean departure delay', `median arrival ${F.smin(k.median_arr)}`]]),
+      h('div', { class: 'row' }, seg([['all', 'All origins'], ...ORIGINS.map(o => [o, o])], DL.origin, v => { DL.origin = v; renderAll(); }, 'Origin')),
+      scoped,
+      h('section', { class: 'sect' }, h('h2', { text: 'Weather at the origin' }),
+        h('p', { class: 'lede', text: 'Mean departure delay by conditions at the airport in the scheduled hour, all three origins together. An association, since storms also arrive in the busy late afternoon.' }),
+        h('div', { class: 'grid2' }, weather)),
+      h('section', { class: 'sect' }, h('div', { class: 'grid2' },
+        h('figure', { class: 'fig' }, h('h2', { text: 'On-time arrivals by airline' }),
+          hbars(byOnTime.map(a => ({ link: link('airline', a.id, a.name), value: a.on_time, text: F.pct(a.on_time) })), { max: 1 }),
+          h('figcaption', { text: 'Share of completed flights arriving under 15 min late. Bars start at zero.' })),
+        h('figure', { class: 'fig' }, h('h2', { text: 'Minutes made up in the air' }),
+          hbars(st.distance.filter(d => d.flights >= 500).map(d => ({ label: d.band, value: Math.max(0, d.recovery), text: `${F.num(d.recovery)} min` }))),
+          h('figcaption', { text: 'Mean departure delay minus arrival delay, by route distance. Longer flights have more schedule padding and more sky to recover in. Bands with under 500 flights are left out.' })))),
+      h('section', { class: 'sect' }, figure({ title: 'How late flights leave', sub: `Departed flights by 15-minute band; ${F.pct(bands.filter(b => b.g <= 0).reduce((n, b) => n + b.flights, 0) / total)} leave under 15 min late`,
+        chart: w => colChart({ width: w, height: 170, yFmt: v => (v >= 1000 ? `${v / 1000}K` : `${v}`), xEvery: w < 480 ? 2 : 1,
+          items: bands.map(b => ({ label: bandShort(b.g), value: b.flights, tip: [b.band, [['flights', F.int(b.flights)], ['of departures', F.pct(b.flights / total, 1)]]] })) }),
+        table: { cols: [{ key: 'band', label: 'Band' }, { key: 'flights', label: 'Flights', num: true, fmt: F.int }, { key: 'share', label: 'Share', num: true, fmt: v => F.pct(v, 1) }],
+          rows: bands.map(b => ({ ...b, share: b.flights / total })) },
+        caption: 'Axis labels are the lower edge of each band in minutes.' })));
+    drawScoped();
+  },
+};
+
+// ---------- pipeline: lineage drawn from the DAG the pipeline actually ran ----------
+const PL = { sel: null };
+const LAYERS = [['raw', 'Raw'], ['clean', 'Clean'], ['processed', 'Processed'], ['enriched', 'Enriched'], ['transform', 'Transform'],
+  ['metrics', 'Metrics'], ['alerts', 'Alerts'], ['ontology', 'Ontology tables'], ['object', 'Object types']];
+const GROUPS = ['Operations source', 'Weather source', 'Reference data', 'Flight delays', 'Aviation metrics', 'Alerting', 'Aviation ontology', 'Object types'];
+const CHECK_NOTES = {
+  'tail_number resolves in processed/aircraft': 'Some carriers report fleet numbers instead of registered tail numbers. Their flights count everywhere but carry no Aircraft link.',
+  'reported distance within 2% of great-circle': 'EWR to LGA is a 17-mile hop, where rounding to whole miles exceeds 2%.',
+};
+function lineageNodes() {
+  if (D.nodes) return D.nodes;
+  const nodes = D.core.lineage.map(d => ({ ...d, short: d.name.split('/')[1] }));
+  for (const ot of D.core.ontology.objectTypes) {
+    nodes.push({ name: 'object/' + ot.id, short: ot.name, layer: 'object', group: 'Object types', inputs: [ot.backing], rows: ot.objects,
+      description: ot.description, objectType: ot, checks: [], health: 'pass', columns: [] });
+  }
+  const by = new Map(nodes.map(n => [n.name, n]));
+  for (const n of nodes) n.outputs = [];
+  for (const n of nodes) for (const i of n.inputs) by.get(i).outputs.push(n.name);
+  D.nodes = nodes; D.byId.node = by;
+  return nodes;
+}
+function closure(start, dir) {
+  const seen = new Set(), todo = [start];
+  while (todo.length) for (const nxt of D.byId.node.get(todo.pop())[dir]) if (!seen.has(nxt)) { seen.add(nxt); todo.push(nxt); }
+  return seen;
+}
+
+function drawLineage() {
+  const nodes = lineageNodes(), NW = 150, NH = 24, GX = 44, GY = 7, TOP = 30;
+  const cols = LAYERS.map(([id]) => nodes.filter(n => n.layer === id));
+  const tall = Math.max(...cols.map(c => c.length)) * (NH + GY);
+  const place = () => cols.forEach((col, ci) => col.forEach((n, i) => {
+    n.x = 8 + ci * (NW + GX); n.y = TOP + (tall - col.length * (NH + GY)) / 2 + i * (NH + GY);
+  }));
+  const mean = names => names.reduce((a, name) => a + D.byId.node.get(name).y, 0) / (names.length || 1);
+  place();
+  for (let sweep = 0; sweep < 4; sweep++) {
+    const fwd = sweep % 2 === 0;
+    for (const col of fwd ? cols.slice(1) : cols.slice(0, -1).reverse()) {
+      col.sort((a, b) => { const ka = fwd ? a.inputs : a.outputs, kb = fwd ? b.inputs : b.outputs; return (ka.length ? mean(ka) : a.y) - (kb.length ? mean(kb) : b.y); });
+      place();
+    }
+  }
+  const W = 16 + cols.length * (NW + GX) - GX, H = TOP + tall + 8;
+  const up = PL.sel ? closure(PL.sel, 'inputs') : new Set(), down = PL.sel ? closure(PL.sel, 'outputs') : new Set();
+  const lit = name => name === PL.sel || up.has(name) || down.has(name);
+  const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img',
+    'aria-label': 'Data lineage from raw source files, through cleaning, enrichment and metrics, to ontology tables and object types' });
+  LAYERS.forEach(([, label], ci) => svg.append(s('text', { x: 8 + ci * (NW + GX), y: 16, style: 'font-weight:650;fill:var(--ink-2);font-size:12px' }, label)));
+  const edges = s('g');
+  for (const n of nodes) for (const i of n.inputs) {
+    const a = D.byId.node.get(i), x1 = a.x + NW, y1 = a.y + NH / 2, x2 = n.x, y2 = n.y + NH / 2, dx = Math.max(18, (x2 - x1) / 2);
+    const on = PL.sel && lit(i) && lit(n.name) && (n.name === PL.sel || i === PL.sel || (up.has(n.name) && up.has(i)) || (down.has(n.name) && down.has(i)));
+    edges.append(s('path', { class: 'edge' + (on ? ' on' : PL.sel ? ' dim' : ''), d: `M${x1} ${y1}C${x1 + dx} ${y1} ${x2 - dx} ${y2} ${x2} ${y2}` }));
+  }
+  svg.append(edges);
+  for (const n of nodes) {
+    const g = s('g', { class: 'node' + (n.name === PL.sel ? ' sel' : PL.sel && !lit(n.name) ? ' dim' : ''), tabindex: 0, role: 'button',
+      'aria-label': `${n.name}, ${F.int(n.rows)} rows` });
+    const label = n.short.length > 21 ? n.short.slice(0, 20) + '…' : n.short;
+    g.append(s('rect', { x: n.x, y: n.y, width: NW, height: NH, rx: 3 }),
+      s('rect', { x: n.x, y: n.y, width: 5, height: NH, rx: 2, style: `fill:${PAL.series[GROUPS.indexOf(n.group)]};stroke:none` }),
+      s('text', { x: n.x + 11, y: n.y + 16 }, label));
+    if (n.health !== 'pass') g.append(s('path', { d: `M${n.x + NW - 13} ${n.y + 6}l6 11h-12z`, fill: n.health === 'fail' ? 'var(--critical)' : 'var(--warning)' }));
+    const pick = () => { PL.sel = n.name; VIEW.pipeline.redraw(); openObj('dataset', n.name, true); };
+    g.addEventListener('click', pick); g.addEventListener('keydown', e => { if (e.key === 'Enter') pick(); });
+    tipOn(g, () => tipRows(n.name, [['rows', F.int(n.rows)], ...(n.health !== 'pass' ? [['', 'has a warning']] : [])]));
+    svg.append(g);
+  }
+  return svg;
+}
+
+function drawOntology() {
+  const P = { airline: [20, 20], airport: [560, 20], aircraft: [20, 140], flight: [290, 140], route: [560, 140], delay: [20, 260], origin_day: [290, 260], route_alert: [560, 260] };
+  const NW = 124, NH = 34, ont = D.core.ontology, name = id => ont.objectTypes.find(o => o.id === id);
+  const svg = s('svg', { viewBox: '0 0 704 314', width: 704, height: 314, role: 'img', 'aria-label': 'Object types and the links between them' },
+    s('defs', null, s('marker', { id: 'arr', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' },
+      s('path', { d: 'M0 0L10 5L0 10z', fill: 'currentColor' }))));
+  const pairs = new Map();
+  for (const l of ont.linkTypes) { const key = l.from + '>' + l.to; pairs.set(key, [...(pairs.get(key) || []), l.name]); }
+  const edge = (a, b) => {   // clip the centre line to both boxes
+    const [ax, ay] = [P[a][0] + NW / 2, P[a][1] + NH / 2], [bx, by] = [P[b][0] + NW / 2, P[b][1] + NH / 2], dx = bx - ax, dy = by - ay;
+    const t = Math.min(dx ? (NW / 2 + 2) / Math.abs(dx) : Infinity, dy ? (NH / 2 + 2) / Math.abs(dy) : Infinity);
+    return [ax + dx * t, ay + dy * t, bx - dx * t, by - dy * t];
+  };
+  for (const [key, names] of pairs) {
+    const [a, b] = key.split('>'), [x1, y1, x2, y2] = edge(a, b), t = key === 'origin_day>airport' ? 0.3 : 0.5, mx = x1 + (x2 - x1) * t, my = y1 + (y2 - y1) * t;
+    svg.append(s('line', { x1, y1, x2, y2, stroke: 'currentColor', 'stroke-width': 1, 'marker-end': 'url(#arr)', style: 'color:var(--ink-3)' }),
+      s('text', { x: mx, y: my + 3, 'text-anchor': 'middle', style: 'font-size:10.5px;fill:var(--ink-2);paint-order:stroke;stroke:var(--surface);stroke-width:4px' }, names.join(', ')));
+  }
+  for (const [id, [x, y]] of Object.entries(P)) {
+    const ot = name(id), g = s('g', { class: 'node', tabindex: 0, role: 'button', 'aria-label': `${ot.name}, ${F.int(ot.objects)} objects` });
+    g.append(s('rect', { x, y, width: NW, height: NH, rx: 3 }), s('text', { x: x + 10, y: y + 15 }, ot.name),
+      s('text', { x: x + 10, y: y + 28, style: 'font-weight:400;fill:var(--ink-3);font-size:10.5px' }, F.int(ot.objects)));
+    const pick = () => openObj('dataset', 'object/' + id, true);
+    g.addEventListener('click', pick); g.addEventListener('keydown', e => { if (e.key === 'Enter') pick(); });
+    svg.append(g);
+  }
+  return svg;
+}
+
+VIEW.pipeline = {
+  render(root) {
+    const nodes = lineageNodes(), meta = D.core.meta, lin = h('div', { class: 'lin-wrap scroll-x' });
+    const warned = nodes.filter(n => n.health !== 'pass');
+    this.redraw = () => lin.replaceChildren(drawLineage());
+    this.onSelect = () => { if (!S.stack.length && PL.sel) { PL.sel = null; this.redraw(); } };
+    put(root, viewHead('Pipeline', `${D.core.lineage.length} datasets carry ${F.int(meta.kpis.flights)} raw flight records to eight object types in ${meta.pipeline_seconds} seconds. The graph is exported from the pipeline run itself: a transform that reads a table it did not declare stops the build.`),
+      tiles([[String(D.core.lineage.length), 'datasets'], [String(meta.checks.pass + meta.checks.warn + meta.checks.fail), 'health checks'], [String(meta.checks.pass), 'passing'],
+        [String(meta.checks.warn), 'warnings', `${meta.checks.fail} failing`]]),
+      h('figure', { class: 'fig' }, h('div', { class: 'fig-head' }, h('div', null, h('h2', { text: 'Lineage' }), h('p', { text: 'Select a dataset to trace everything upstream and downstream of it and to see its schema and checks.' })),
+        h('button', { class: 'linkish', type: 'button', style: { fontSize: '12px' }, onclick: () => { PL.sel = null; this.redraw(); } }, 'Clear trace')),
+        h('div', { class: 'legend' }, GROUPS.map((g, i) => h('span', null, h('i', { class: 'box', style: { background: PAL.series[i] } }), g))),
+        lin, h('figcaption', { text: 'Left to right: source files as delivered, typed and repaired, derived fields, the wide join, the delay and metric tables, alert detection, and the tables that back each object type. A triangle marks a dataset with a warning.' })),
+      h('section', { class: 'sect' }, h('h2', { text: `Warnings (${warned.length})` }), warned.length ? warned.map(n => n.checks.filter(c => c.status !== 'pass').map(c =>
+        h('div', { class: 'banner' }, link('dataset', n.name, n.name), `: ${c.name}. Observed ${c.observed}; expected ${c.expected}. `, CHECK_NOTES[c.name] || ''))) : h('p', { class: 'note', text: 'Every check passes.' })),
+      h('section', { class: 'sect' }, h('h2', { text: 'Ontology' }),
+        h('p', { class: 'lede', text: 'Object types are the nouns of the app. Arrows are link types, read from the tail to the head.' }),
+        h('figure', { class: 'fig' }, h('div', { class: 'lin-wrap scroll-x' }, drawOntology()),
+          h('figcaption', { text: 'Flight is the hub: it resolves to an airline, an aircraft, two airports, a route and the origin airport\'s day. Route Alert attaches to a route and to the day that gives it context.' })),
+        simpleTable([{ label: 'From', render: l => D.core.ontology.objectTypes.find(o => o.id === l.from).name }, { key: 'name', label: 'Link' },
+          { label: 'To', render: l => D.core.ontology.objectTypes.find(o => o.id === l.to).name }, { key: 'cardinality', label: 'Cardinality' }, { key: 'via', label: 'Through' }], D.core.ontology.linkTypes)),
+      h('section', { class: 'sect' }, h('h2', { text: 'Source' }), h('p', { class: 'lede', text: meta.source }),
+        h('p', { class: 'note', text: `Built ${meta.generated.slice(0, 10)}. An independent open-source build in Python and DuckDB; no proprietary platform is involved.` })));
+    this.redraw();
+  },
+};
+
+DETAIL.dataset = {
+  kind: 'Dataset', get: id => { lineageNodes(); return D.byId.node.get(id); },
+  render(n) {
+    const names = list => (list.length ? h('div', { class: 'row' }, list.map(x => link('dataset', x, x))) : '–');
+    const ot = n.objectType, act = ot && D.core.ontology.actions[ot.id];
+    const links = ot ? D.core.ontology.linkTypes.filter(l => l.from === ot.id || l.to === ot.id) : [];
+    const tname = id => D.core.ontology.objectTypes.find(o => o.id === id).name;
+    return [h('div', { class: 'fig' }, h('h1', { text: ot ? ot.name : n.name }), h('p', { text: n.description })),
+      kv([[ot ? 'Objects' : 'Rows', F.int(n.rows)], ['Group', n.group], !ot && ['Layer', LAYERS.find(l => l[0] === n.layer)[1]],
+        !ot && ['Size on disk', `${F.int(n.bytes / 1024)} KB`], !ot && ['Build time', `${n.seconds} s`], n.pk?.length && ['Primary key', n.pk.join(', ')],
+        ot && ['Primary key', ot.pk], ot && ['Title property', ot.title], n.source && ['Provenance', n.source]]),
+      h('section', { class: 'sect' }, h('h2', { text: ot ? 'Backed by' : 'Reads from' }), names(n.inputs), !ot && h('h2', { text: 'Feeds' }), !ot && names(n.outputs)),
+      ot && h('section', { class: 'sect' }, h('h2', { text: 'Links' }), simpleTable([{ label: 'From', render: l => tname(l.from) }, { key: 'name', label: 'Link' },
+        { label: 'To', render: l => tname(l.to) }, { key: 'cardinality', label: 'Cardinality' }], links)),
+      act && h('section', { class: 'sect' }, h('h2', { text: 'Action: change status' }),
+        simpleTable([{ label: 'From', render: r => STATUS_LABEL[r[0]] }, { label: 'Allowed next', wrap: true, render: r => r[1].map(x => STATUS_LABEL[x]).join(', ') }], Object.entries(act.transitions))),
+      n.checks.length ? h('section', { class: 'sect' }, h('h2', { text: `Health checks (${n.checks.length})` }),
+        simpleTable([{ label: 'Result', render: c => ({ pass: 'Pass', warn: 'Warning', fail: 'Fail' })[c.status] }, { key: 'name', label: 'Check', wrap: true }, { key: 'observed', label: 'Observed', wrap: true }], n.checks)) : null,
+      n.columns.length ? h('section', { class: 'sect' }, h('h2', { text: `Schema (${n.columns.length} columns)` }),
+        simpleTable([{ key: 'name', label: 'Column' }, { key: 'type', label: 'Type' }], n.columns)) : null];
+  },
+};
+
+// ---------- ask the data: Claude plans, the page computes ----------
+const ASK = { sample: null, tools: false, tier: 'quick', turns: [], log: [], busy: false, ctl: null };
+const monthOf = iso => +iso.slice(5, 7);
+const TABLES = {
+  airlines: { about: 'one row per airline', rows: () => D.airlines.map(a => ({ id: a.id, name: a.name, type: a.type, flights: a.flights, routes: a.routes, cancelled: a.cancelled,
+    cancel_rate: a.cancel_rate, on_time: a.on_time, mean_dep: a.mean_dep, mean_arr: a.mean_arr, median_arr: a.median_arr, registry_aircraft: a.registry_aircraft })) },
+  airports: { about: 'one row per airport; origin=true for EWR, JFK, LGA', rows: () => D.airports.map(a => ({ id: a.id, name: a.name, origin: a.origin, flights: a.flights,
+    airlines: a.carriers, on_time: a.on_time, mean_delay: a.mean_delay, cancel_rate: a.cancel_rate, miles_from_nyc: a.miles, time_zone: a.tz })) },
+  routes: { about: 'one row per origin-destination pair, full-year figures', rows: () => D.routes.map(r => ({ id: r.id, origin: r.o, dest: r.d, dest_name: r.dest_name, flights: r.flights,
+    cancelled: r.cancelled, arrived: r.arrived, cancel_rate: r.cancel_rate, on_time: r.on_time, mean_dep: r.mean_dep, mean_arr: r.mean_arr, median_arr: r.median_arr,
+    p90_arr: r.p90_arr, distance_mi: r.dist, air_time_min: r.air_time, air_recovery_min: r.recovery, airlines: r.carriers.length, alerts: r.alerts })) },
+  route_airlines: { about: 'one row per airline on a route', rows: () => D.routes.flatMap(r => r.carriers.map(c => ({ route: r.id, origin: r.o, dest: r.d, airline: c.id,
+    flights: c.flights, on_time: c.on_time, mean_arr: c.mean_arr, cancel_rate: c.cancel_rate }))) },
+  origin_days: { about: 'one row per New York airport per day, operations plus weather', rows: () => D.origin_days.map(o => ({ airport: o.a, date: o.date, month: monthOf(o.date),
+    flights: o.flights, cancelled: o.cancelled, cancel_rate: o.cancel_rate, mean_dep: o.mean_dep, late_share: o.late_share, temp_min_f: o.tmin, temp_max_f: o.tmax,
+    precip_in: o.precip, visibility_min_mi: o.vis, wind_max_mph: o.wind, gust_max_mph: o.gust, adverse_hours: o.adverse_hours, disruption_z: o.z, disrupted: o.disrupted })) },
+  alerts: { about: 'one row per route alert; type is delay_spike, cancellation_cluster or chronic_lateness', rows: () => D.alerts.map(a => ({ id: a.id, type: a.type, severity: a.sev,
+    route: a.route, origin: a.o, dest: a.d, date: a.date, month: monthOf(a.date), flights: a.n, observed: a.observed, expected: a.expected, statistic: a.stat,
+    status: Triage.get(a.id).status, origin_disrupted: a.origin_disrupted })) },
+  route_days: { about: 'one row per route per day with flights (about 64,000 rows); mean_dep in minutes', lazy: 'route_daily', rows: () => {
+    const out = [];
+    for (const r of D.route_daily) { const [o, d] = r.id.split('-'); for (let i = 0; i < 365; i++) if (r.n[i]) out.push({ route: r.id, origin: o, dest: d, date: idxDate(i),
+      month: monthOf(idxDate(i)), flights: r.n[i], cancelled: r.c[i], mean_dep: r.dep[i], arrived: r.arr[i], arrived_late: r.late[i] }); }
+    return out; } },
+  aircraft: { about: 'one row per registered aircraft that flew', lazy: 'aircraft', rows: () => D.aircraft.map(a => ({ ...a })) },
+  fleet: { about: 'one row per airline and aircraft model', rows: () => D.core.fleet.map(f => ({ ...f })) },
+  hourly: { about: 'one row per origin and scheduled departure hour', rows: () => D.core.stats.hourly.map(r => ({ ...r })) },
+  weather_bins: { about: 'departure delay by weather at the origin in the scheduled hour; dimension is Visibility, Wind speed, Precipitation or Temperature',
+    rows: () => D.core.stats.weather.map(({ bin_order, ...r }) => r) },
+  airline_months: { about: 'one row per airline and month', rows: () => D.airlines.flatMap(a => a.monthly.map(m => ({ airline: a.id, ...m }))) },
+  distance_bands: { about: 'one row per 250-mile distance band', rows: () => D.core.stats.distance.map(({ g, ...r }) => r) },
+};
+const tableCache = {};
+async function tableRows(name) {
+  const t = TABLES[name];
+  if (!t) throw new Error(`Unknown table "${name}". Tables: ${Object.keys(TABLES).join(', ')}`);
+  if (!tableCache[name] || name === 'alerts') { if (t.lazy) await need(t.lazy); tableCache[name] = t.rows(); }
+  return tableCache[name];
+}
+const OPS = { '=': (a, b) => a === b, '!=': (a, b) => a !== b, '>': (a, b) => a > b, '>=': (a, b) => a >= b, '<': (a, b) => a < b, '<=': (a, b) => a <= b,
+  in: (a, b) => Array.isArray(b) && b.includes(a), contains: (a, b) => String(a).toLowerCase().includes(String(b).toLowerCase()) };
+const AGG = {
+  count: rows => rows.length,
+  sum: (rows, c) => rows.reduce((n, r) => n + (r[c] ?? 0), 0),
+  avg: (rows, c) => { const v = rows.map(r => r[c]).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; },
+  min: (rows, c) => rows.reduce((m, r) => (r[c] != null && (m == null || r[c] < m) ? r[c] : m), null),
+  max: (rows, c) => rows.reduce((m, r) => (r[c] != null && (m == null || r[c] > m) ? r[c] : m), null),
+  wavg: (rows, c, w) => { let num = 0, den = 0; for (const r of rows) if (r[c] != null && r[w] != null) { num += r[c] * r[w]; den += r[w]; } return den ? num / den : null; },
+};
+const tidy = v => (typeof v === 'number' && !Number.isInteger(v) ? +v.toPrecision(5) : v);
+async function runQuery(spec) {
+  let rows = await tableRows(String(spec.table));
+  const cols = Object.keys(rows[0] || {}), must = c => { if (!cols.includes(c)) throw new Error(`No column "${c}" in ${spec.table}. Columns: ${cols.join(', ')}`); return c; };
+  for (const f of spec.where || []) {
+    const op = OPS[f.op || '=']; if (!op) throw new Error(`Unknown operator "${f.op}". Use ${Object.keys(OPS).join(' ')}`);
+    const c = must(String(f.col)); rows = rows.filter(r => op(r[c], f.value));
+  }
+  const matched = rows.length;
+  let out;
+  if (spec.aggregates?.length) {
+    const keys = (spec.group_by || []).map(c => must(String(c))), groups = new Map();
+    for (const r of rows) { const k = keys.map(c => r[c]).join('\u0001'); (groups.get(k) || groups.set(k, []).get(k)).push(r); }
+    if (!keys.length && !groups.size) groups.set('', []);
+    out = [...groups.values()].map(g => {
+      const o = Object.fromEntries(keys.map(c => [c, g[0]?.[c]]));
+      for (const a of spec.aggregates) {
+        const fn = AGG[a.fn]; if (!fn) throw new Error(`Unknown aggregate "${a.fn}". Use ${Object.keys(AGG).join(', ')}`);
+        if (a.fn !== 'count') must(String(a.col)); if (a.fn === 'wavg') must(String(a.weight));
+        o[a.as || (a.fn === 'count' ? 'count' : `${a.fn}_${a.col}`)] = fn(g, a.col, a.weight);
+      }
+      return o;
+    });
+  } else {
+    const pick = spec.columns?.length ? spec.columns.map(c => must(String(c))) : cols;
+    out = rows.map(r => Object.fromEntries(pick.map(c => [c, r[c]])));
+  }
+  for (const o of [...(spec.order_by || [])].reverse()) {
+    const dir = o.dir === 'asc' ? 1 : -1;
+    out.sort((a, b) => (a[o.col] == null ? 1 : b[o.col] == null ? -1 : typeof a[o.col] === 'string' ? a[o.col].localeCompare(b[o.col]) * dir : (a[o.col] - b[o.col]) * dir));
+  }
+  const limit = Math.max(1, Math.min(50, Number(spec.limit) || 20)), columns = Object.keys(out[0] || {});
+  return { columns, rows: out.slice(0, limit).map(r => columns.map(c => tidy(r[c]))), rows_matched: matched, rows_returned: Math.min(limit, out.length), groups_total: out.length };
+}
+function schemaText() {
+  return Object.entries(TABLES).map(([name, t]) => {
+    const sample = name === 'route_days' ? { route: 0, origin: 0, dest: 0, date: 0, month: 0, flights: 0, cancelled: 0, mean_dep: 0, arrived: 0, arrived_late: 0 }
+      : name === 'aircraft' ? { id: 0, airline: 0, maker: 0, model: 0, year: 0, seats: 0, engines: 0, flights: 0, routes: 0, mean_arr: 0, miles: 0 } : t.rows()[0];
+    return `- ${name} (${t.about}): ${Object.keys(sample).join(', ')}`;
+  }).join('\n');
+}
+const askRules = () => `You answer questions about flights that departed New York's three airports (EWR Newark, JFK Kennedy, LGA LaGuardia) in 2013: ${F.int(D.core.meta.kpis.flights)} flights, from US Bureau of Transportation Statistics on-time data joined to hourly airport weather.
+${ASK.tools ? 'Use the query tool to compute every figure you state. Never state a number that did not come from a tool result. Plan first, then make as few calls as you can.' : 'Answer only from the tables given below. If they cannot answer the question, say what is missing.'}
+Conventions: on_time, cancel_rate and late_share are fractions from 0 to 1 (on time means arriving under 15 minutes late). Delays are minutes; negative is early. Dates are ISO strings, month is 1 to 12. To combine a rate across rows, use wavg weighted by flights (by arrived for on_time). Airline ids are two-letter codes; join names from the airlines table.
+Tables and columns:
+${schemaText()}
+Reply in plain text: two to five short sentences, or a short dash list for rankings. No headings, no tables. Give numbers with units, and name the table or filter when it matters.`;
+const QUERY_TOOL = {
+  name: 'query',
+  description: 'Run one filter/group/aggregate query over a table in the page and return up to 50 rows as {columns, rows, rows_matched, groups_total}. Use it for every number. Errors name the valid tables, columns or operators.',
+  inputSchema: { type: 'object', required: ['table'], properties: {
+    table: { type: 'string' },
+    where: { type: 'array', items: { type: 'object', required: ['col', 'value'], properties: { col: { type: 'string' }, op: { type: 'string', enum: Object.keys(OPS) }, value: {} } } },
+    group_by: { type: 'array', items: { type: 'string' } },
+    aggregates: { type: 'array', items: { type: 'object', required: ['fn'], properties: { fn: { type: 'string', enum: Object.keys(AGG) }, col: { type: 'string' }, weight: { type: 'string' }, as: { type: 'string' } } } },
+    columns: { type: 'array', items: { type: 'string' } },
+    order_by: { type: 'array', items: { type: 'object', required: ['col'], properties: { col: { type: 'string' }, dir: { type: 'string', enum: ['asc', 'desc'] } } } },
+    limit: { type: 'number' } } },
+};
+function richText(text) {
+  const out = [], bold = line => line.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? h('b', { text: part }) : part));
+  let list = null;
+  for (const raw of text.split('\n')) {
+    const line = raw.trim(), m = /^(?:[-*•]|\d+[.)])\s+(.*)$/.exec(line);
+    if (!line) { list = null; continue; }
+    if (m) { if (!list) out.push(list = h('ul')); list.append(h('li', null, bold(m[1]))); }
+    else { list = null; out.push(h('p', null, bold(line))); }
+  }
+  return out;
+}
+const ASK_ERRORS = { rate_limited: 'Claude is rate limited right now. Try again in a little while.', session_expired: 'Sign in to Claude again, then retry.',
+  refused: 'Claude declined that question. Try asking it another way.', empty_completion: 'No answer came back. Try a simpler question.', prompt_too_large: 'That conversation got too long. Start a new one.' };
+const ASK_GONE = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'];
+
+VIEW.ask = {
+  render(root) {
+    const chat = h('div', { class: 'chat' });
+    const box = h('textarea', { class: 'field', id: 'ask-box', rows: 2, placeholder: 'Ask about airlines, routes, days, weather or alerts', maxlength: 600 });
+    const send = h('button', { class: 'btn primary', type: 'button' }, 'Ask'), stop = h('button', { class: 'btn', type: 'button', hidden: true, onclick: () => ASK.ctl?.abort() }, 'Stop');
+    const draw = () => {
+      chat.replaceChildren(...ASK.log.map(m => m.role === 'q' ? h('div', { class: 'msg q', text: m.text })
+        : h('div', { class: 'msg a' }, m.text ? richText(m.text) : h('p', { class: 'muted', text: 'Thinking…' }),
+          m.error && h('p', { class: 'banner', text: m.error }),
+          m.steps.length ? h('details', { class: 'q' }, h('summary', { text: `${m.steps.length} ${m.steps.length === 1 ? 'query' : 'queries'} run on this page` }),
+            m.steps.map(st => h('pre', { text: JSON.stringify(st.spec) + '\n→ ' + (st.error || `${st.result.rows_returned} of ${st.result.groups_total} rows\n${st.result.columns.join(' | ')}\n${st.result.rows.slice(0, 12).map(r => r.join(' | ')).join('\n')}`) }))) : null)));
+      send.disabled = ASK.busy; stop.hidden = !ASK.busy;
+    };
+    const ask = async text => {
+      text = text.trim(); if (!text || ASK.busy || !ASK.sample) return;
+      const m = { role: 'a', text: '', steps: [] };
+      ASK.log.push({ role: 'q', text }, m); ASK.turns.push({ role: 'user', content: text }); ASK.busy = true; ASK.ctl = new AbortController(); box.value = ''; draw();
+      const tool = { ...QUERY_TOOL, execute: async input => {
+        const step = { spec: input }; m.steps.push(step);
+        try { step.result = await runQuery(input); return step.result; } catch (err) { step.error = err.message; throw err; } finally { draw(); }
+      } };
+      try {
+        const res = await ASK.sample([{ role: 'user', content: askRules() + (ASK.tools ? '' : '\n\nData:\n' + (await fallbackData())) }, ...ASK.turns.slice(-8)],
+          { modelTier: ASK.tier, signal: ASK.ctl.signal, onText: ({ text: t }) => { m.text = t; draw(); }, ...(ASK.tools ? { tools: [tool] } : { cache: false }) });
+        m.text = res.text; ASK.turns.push({ role: 'assistant', content: res.text });
+        if (res.truncated) m.error = 'The answer was cut short. Ask for less at a time.';
+      } catch (err) {
+        ASK.turns.pop(); m.text = err.code === 'refused' ? '' : (err.text || m.text);
+        if (ASK_GONE.includes(err.code)) { S.askReady = false; ASK.sample = null; m.error = 'Asking Claude is not available in this view.'; renderNav(); }
+        else if (err.code !== 'cancelled') m.error = ASK_ERRORS[err.code] || 'Claude could not be reached. Try again.';
+        if (!m.text && !m.error) m.text = 'Stopped.';
+      } finally { ASK.busy = false; draw(); }
+    };
+    send.addEventListener('click', () => ask(box.value));
+    box.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(box.value); } });
+    put(root, viewHead('Ask the data', 'Claude plans the question and this page runs the queries over its own tables, so every figure in an answer comes from a computation you can open and check. Answers use your Claude account.'),
+      !ASK.log.length && h('div', { class: 'row' }, ['Which airline was most punctual out of JFK, and which least?', 'What were the five worst days at Newark, and what was the weather?',
+        'How much do delays grow when visibility drops below one mile?', 'Which routes drew the most alerts, and of what kind?'].map(q => h('button', { class: 'chip', type: 'button', onclick: () => ask(q) }, q))),
+      chat, h('div', { class: 'fig', style: { maxWidth: '760px' } }, box,
+        h('div', { class: 'row' }, send, stop, seg([['quick', 'Fast'], ['default', 'Thorough']], ASK.tier, v => { ASK.tier = v; renderAll(); }, 'Answer depth'),
+          ASK.log.length ? h('button', { class: 'linkish', type: 'button', onclick: () => { ASK.log = []; ASK.turns = []; renderAll(); } }, 'New conversation') : null),
+        h('p', { class: 'note', text: ASK.tools ? 'Thorough thinks longer before each query and can take a minute.' : 'This view cannot run page queries, so answers draw on summary tables only.' })));
+    draw();
+  },
+};
+async function fallbackData() {
+  const csv = async (name, limit) => { const r = await runQuery({ table: name, limit }); return `${name}\n${r.columns.join(',')}\n${r.rows.map(x => x.join(',')).join('\n')}`; };
+  return (await Promise.all([csv('airlines', 50), csv('hourly', 50), csv('weather_bins', 50), csv('distance_bands', 50),
+    runQuery({ table: 'routes', order_by: [{ col: 'flights', dir: 'desc' }], limit: 50 }).then(r => `routes (50 busiest)\n${r.columns.join(',')}\n${r.rows.map(x => x.join(',')).join('\n')}`)])).join('\n\n');
+}
+function initAsk() {
+  if (!window.claude || !window.claude.use) return;
+  window.claude.use('sample').then(async sample => {
+    if (!sample) return;
+    const caps = await sample.limits().catch(() => null);
+    ASK.sample = sample; ASK.tools = !!(caps && caps.tools); S.askReady = true; renderNav();
+  }).catch(() => {});
+}
+
+// ---------- boot ----------
+async function boot() {
+  try {
+    const [core, airports, routes, alerts, odays] = await Promise.all(['core', 'airports', 'routes', 'alerts', 'origin_days'].map(getJSON));
+    Object.assign(D, { core, airports, routes, alerts, origin_days: odays, airlines: core.airlines });
+    Object.assign(D.byId, { airline: index(D.airlines), airport: index(airports), route: index(routes), alert: index(alerts), oday: index(odays) });
+  } catch (err) {
+    $('#main').replaceChildren(h('p', { class: 'boot', text: `The flight data could not load (${err.message}). Reload the page to try again.` }));
+    return;
+  }
+  Triage.init(); initAsk();
+  applyHash(true);
+  window.addEventListener('hashchange', () => {
+    if (S.selfHash === location.hash.slice(1)) { S.selfHash = null; return; }
+    S.selfHash = null; applyHash(false);
+  });
+  window.addEventListener('resize', debounce(() => { if (Math.abs(innerWidth - S.width) > 8) { S.width = innerWidth; renderAll(); } }, 200));
+  window.addEventListener('keydown', e => { if (e.key === 'Escape' && S.stack.length) closeDrawer(); });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderAll);
+  new MutationObserver(renderAll).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+}
+boot();
+
+</script>
+</body>
+</html>
